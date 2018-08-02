@@ -44,68 +44,92 @@ int decompile(uint8_t * lrom){
        	size = malloc_usable_size(lrom);
 	while(ip < size){
 		instr = lrom[ip] << 8 | lrom[ip+1];
-		startsWithZ = !(instr & 0xf000);
+		
 		
 		printf("%x  %x %x    ", instrCnt++, instr >> 2, instr & 0x00ff);
-		if (startsWithZ){
-			switch(instr){
-				case 0x00e0:
-					printf("CLS");
-					break;
-				case 0x00ee:
-					printf("RET");
-		       			break;
-			 	default:
-					printf("SYS %x", instr);
-			}
-		} else {
-			uint8_t nib1= instr >> 12,
-				nib2= (instr & 0x0f00) >> 8,
-				nib3= (instr & 0x00f0) >> 4,
-				nib4= instr & 0x000f;
-			switch(nib1){
-				// http://devernay.free.fr/hacks/chip8/C8TECH10.HTM for instructions
-				case 0x1:
-					printf("JP %x", instr & 0x0fff);
-					break;
-				case 0x2:
-					printf("CALL %x", instr & 0x0fff);
-					break;
-				case 0x3:
-					printf("SE V%x, %x", nib2, instr & 0x00ff);
-					break;
-				case 0x4:
-					printf("SNE V%x, %x", nib2, instr & 0x00ff);
-					break;
-				case 0x5:
-					printf("SE V%x, V%x", nib2, nib3;
-					break;
-				case 0x6:
-					printf("LD V%x, %x", nib2, instr & 0x00ff);
-					break;
-				case 0x7:
-					printf("SE V%x, %x", nib2, instr & 0x00ff);
-					break;
-				case 0x8:
-					break;
-				case 0x9:
-					break;
-				case 0xa:
-					break;
-				case 0xb:
-					break;
-				case 0xc:
-					break;
-				case 0xd:
-					break;
-				case 0xe:
-					break;
-				case 0xf:
-					break;
-				default:
-				      printf("ERROR reading instruction.");
-
-			}
+	
+		// Bytes 1-4 retrieved and stored for easier printing and comparison	
+		uint8_t nib1= instr >> 12,
+			nib2= (instr & 0x0f00) >> 8,
+			nib3= (instr & 0x00f0) >> 4,
+			nib4= instr & 0x000f;
+		switch(nib1){
+			// http://devernay.free.fr/hacks/chip8/C8TECH10.HTM for instructions
+			case 0x0:
+				if 	(nib3 == 0xe && nib4 == 0xe) 	printf("RET");
+				else if (nib3 == 0xe) 			printf("CLS");
+				else 					printf("SYS %x", instr);
+				break;
+			case 0x1:
+				printf("JP %x", instr & 0x0fff);
+				break;
+			case 0x2:
+				printf("CALL %x", instr & 0x0fff);
+				break;
+			case 0x3:
+				printf("SE V%x, %x", nib2, instr & 0x00ff);
+				break;
+			case 0x4:
+				printf("SNE V%x, %x", nib2, instr & 0x00ff);
+				break;
+			case 0x5:
+				printf("SE V%x, V%x", nib2, nib3);
+				break;
+			case 0x6:
+				printf("LD V%x, %x", nib2, instr & 0x00ff);
+				break;
+			case 0x7:
+				printf("SE V%x, %x", nib2, instr & 0x00ff);
+				break;
+			case 0x8:
+				switch(nib4){
+					case 0x0:
+						printf("LD V%x, V%x", nib2, nib3);
+						break;
+					case 0x1:
+						printf("OR V%x, V%x", nib2, nib3);
+						break;
+					case 0x2:
+						printf("AND V%x, V%x", nib2, nib3);
+						break;
+					case 0x3:
+						printf("XOR V%x, V%x", nib2, nib3);
+						break;
+					case 0x4:
+						printf("ADD V%x, V%x", nib2, nib3);
+						break;
+					case 0x5:
+						printf("SUB V%x, V%x", nib2, nib3);
+						break;
+					case 0x6:
+						printf("SHR V%x {, V%x}", nib2, nib3); // <<<<?
+						break;
+					case 0x7:
+						printf("SUBN V%x, V%x", nib2, nib3);
+						break;
+					case 0xe:
+						printf("SHL V%x {, V%x}", nib2, nib3); // <<<<?
+						break;
+					default:
+						printf("ERROR reading 4th nibble for 8th code");
+				}
+				break;
+			case 0x9:
+				break;
+			case 0xa:
+				break;
+			case 0xb:
+				break;
+			case 0xc:
+				break;
+			case 0xd:
+				break;
+			case 0xe:
+				break;
+			case 0xf:
+				break;
+			default:
+			      printf("ERROR reading instruction.");
 		}
 		printf("\n");
 		//printf("OP->%x \n", instr);
