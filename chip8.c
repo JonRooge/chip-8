@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <malloc.h>
 
 #define RAMSIZE 4096
 
@@ -12,7 +13,7 @@ uint8_t * loadFile(int argc, char ** argv){
 
 	fseek(fp, 0, SEEK_END);
 	fsize = ftell(fp);
-	membuffer = (uint8_t*) malloc(sizeof(uint8_t) * (fsize+1));
+	membuffer = (uint8_t*) malloc(sizeof(uint8_t) * (fsize));
 
 	fseek(fp, 0, SEEK_SET);
 	if (fread(membuffer, 1, fsize, fp) < fsize) {
@@ -34,6 +35,70 @@ uint8_t * loadFile(int argc, char ** argv){
 }
 
 int decompile(uint8_t * lrom){
+	int size, 
+	    ip=0, 
+	    startsWithZ=0;
+	uint16_t instr = 0x0,
+		 firstN = 0x0;
+       	size = malloc_usable_size(lrom);
+	while(ip < size){
+		instr = lrom[ip] << 8 | lrom[ip+1];
+		startsWithZ = !(instr & 0xf000);
+		
+		printf("%x   ", instr);
+		if (startsWithZ){
+			switch(instr){
+				case 0x00e0:
+					printf("CLS");
+					break;
+				case 0x00ee:
+					printf("RET");
+		       			break;
+			 	default:
+					printf("SYS %x", instr);
+			}
+		} else {
+			firstN = instr >> 12;
+			switch(firstN){
+				case 0x1:
+					break;
+				case 0x2:
+					break;
+				case 0x3:
+					break;
+				case 0x4:
+					break;
+				case 0x5:
+					break;
+				case 0x6:
+					break;
+				case 0x7:
+					break;
+				case 0x8:
+					break;
+				case 0x9:
+					break;
+				case 0xa:
+					break;
+				case 0xb:
+					break;
+				case 0xc:
+					break;
+				case 0xd:
+					break;
+				case 0xe:
+					break;
+				case 0xf:
+					break;
+				default:
+				      printf("ERROR reading instruction.");
+
+			}
+		}
+		printf("\n");
+		//printf("OP->%x \n", instr);
+		ip+=2; // Each instruction is 2 bytes
+	}
 	return 0;
 }
 
