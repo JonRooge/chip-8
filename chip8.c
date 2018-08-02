@@ -60,6 +60,10 @@ int decompile(uint8_t * lrom){
 			}
 		} else {
 			firstN = instr >> 12;
+			uint8_t nib1= instr >> 12,
+				nib2= (instr & 0x0f00) >> 8,
+				nib3= (instr & 0x00f0) >> 4,
+				nib4= instr & 0x000f;
 			switch(firstN){
 				// http://devernay.free.fr/hacks/chip8/C8TECH10.HTM for instructions
 				case 0x1:
@@ -69,19 +73,19 @@ int decompile(uint8_t * lrom){
 					printf("CALL %x", instr & 0x0fff);
 					break;
 				case 0x3:
-					printf("SE V%x, %x", (instr & 0x0f00) >> 2, instr & 0x00ff);
+					printf("SE V%x, %x", nib2, instr & 0x00ff);
 					break;
 				case 0x4:
-					printf("SNE V%x, %x", (instr & 0x0f00) >> 2, instr & 0x00ff);
+					printf("SNE V%x, %x", nib2, instr & 0x00ff);
 					break;
 				case 0x5:
-					printf("SE V%x, V%x", (instr & 0x0f00) >> 2, (instr & 0x00f0) >> 1);
+					printf("SE V%x, V%x", nib2, nib3;
 					break;
 				case 0x6:
-					printf("LD V%x, %x", (instr & 0x0f00) >> 2, instr & 0x00ff);
+					printf("LD V%x, %x", nib2, instr & 0x00ff);
 					break;
 				case 0x7:
-					printf("SE V%x, %x", (instr & 0x0f00) >> 2, instr & 0x00ff);
+					printf("SE V%x, %x", nib2, instr & 0x00ff);
 					break;
 				case 0x8:
 					break;
