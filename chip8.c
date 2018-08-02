@@ -39,13 +39,14 @@ int decompile(uint8_t * lrom){
 	    ip=0, 
 	    startsWithZ=0;
 	uint16_t instr = 0x0,
-		 firstN = 0x0;
+		 firstN = 0x0,
+		 instrCnt = 0x0;
        	size = malloc_usable_size(lrom);
 	while(ip < size){
 		instr = lrom[ip] << 8 | lrom[ip+1];
 		startsWithZ = !(instr & 0xf000);
 		
-		printf("%x   ", instr);
+		printf("%x  %x %x    ", instrCnt++, instr >> 2, instr & 0x00ff);
 		if (startsWithZ){
 			switch(instr){
 				case 0x00e0:
@@ -60,19 +61,27 @@ int decompile(uint8_t * lrom){
 		} else {
 			firstN = instr >> 12;
 			switch(firstN){
+				// http://devernay.free.fr/hacks/chip8/C8TECH10.HTM for instructions
 				case 0x1:
+					printf("JP %x", instr & 0x0fff);
 					break;
 				case 0x2:
+					printf("CALL %x", instr & 0x0fff);
 					break;
 				case 0x3:
+					printf("SE V%x, %x", (instr & 0x0f00) >> 2, instr & 0x00ff);
 					break;
 				case 0x4:
+					printf("SNE V%x, %x", (instr & 0x0f00) >> 2, instr & 0x00ff);
 					break;
 				case 0x5:
+					printf("SE V%x, V%x", (instr & 0x0f00) >> 2, (instr & 0x00f0) >> 1);
 					break;
 				case 0x6:
+					printf("LD V%x, %x", (instr & 0x0f00) >> 2, instr & 0x00ff);
 					break;
 				case 0x7:
+					printf("SE V%x, %x", (instr & 0x0f00) >> 2, instr & 0x00ff);
 					break;
 				case 0x8:
 					break;
