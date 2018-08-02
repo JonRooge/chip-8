@@ -111,22 +111,61 @@ int decompile(uint8_t * lrom){
 						printf("SHL V%x {, V%x}", nib2, nib3); // <<<<?
 						break;
 					default:
-						printf("ERROR reading 4th nibble for 8th code");
+						printf("ERROR reading 4th nibble for 0x8 code");
 				}
 				break;
 			case 0x9:
+				printf("SNE V%x, V%x", nib2, nib3);
 				break;
 			case 0xa:
+				printf("LD I, %x", instr & 0x0fff);
 				break;
 			case 0xb:
+				printf("JP V0, %x", instr & 0x0fff);
 				break;
 			case 0xc:
+				printf("RND V%x, V%x", nib2, instr & 0x00ff);
 				break;
 			case 0xd:
+				printf("DRW V%x, V%x, %x", nib2, nib3, nib4);
 				break;
 			case 0xe:
+				if 	((nib3 << 4 | nib4) == 0x9e) 	printf("SKP V%x", nib2);
+				else if ((nib3 << 4 | nib4) == 0xa1)	printf("SKNP V%x", nib2);
+				else					printf("ERROR reading 4th nibble of 0xe OP");
 				break;
 			case 0xf:
+				switch(instr & 0x00ff){
+					case 0x07:
+						printf("LD V%x, DT", nib2);
+						break;
+					case 0x0a:
+						printf("LD V%x, K", nib2);
+						break;
+					case 0x15:
+						printf("LD DT, V%x", nib2);
+						break;
+					case 0x18:
+						printf("LD ST, V%x", nib2);
+						break;
+					case 0x1e:
+						printf("ADD I, V%x", nib2);
+						break;
+					case 0x29:
+						printf("LD F, V%x", nib2);
+						break;
+					case 0x33:
+						printf("LD B, V%x", nib2);
+						break;
+					case 0x55:
+						printf("LD [I], V%x", nib2);
+						break;
+					case 0x65:
+						printf("LD V%x, [I]", nib2);
+						break;
+					default:
+						printf("ERROR reading 2nd byte of 0xf OP");
+				}
 				break;
 			default:
 			      printf("ERROR reading instruction.");
