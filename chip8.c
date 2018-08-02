@@ -4,11 +4,8 @@
 
 #define RAMSIZE 4096
 
-
-
-int main(int argc, char ** argv){
-	int result = 0,
-	    bytep = 0,
+uint8_t * loadFile(int argc, char ** argv){
+	int bytep = 0,
 	    fsize = 0;
 	uint8_t * membuffer;
 	FILE * fp = fopen(argv[1], "r");
@@ -19,22 +16,33 @@ int main(int argc, char ** argv){
 
 	fseek(fp, 0, SEEK_SET);
 	if (fread(membuffer, 1, fsize, fp) < fsize) {
-		return 1;
+		printf("ERROR reading file");
 	}
 	
 	fclose(fp);
 	
 	if(argc == 1 || fsize <= 1){
 		printf("Failed to load file.");
-		return 1;
 	}
-
+	printf("ROM BYTE CODE:\n");
 	while(bytep != fsize){
 		printf("%x ", membuffer[bytep]);
 		bytep++;
 	}
-	//result = decompile(f);
-	
+	printf("\n");
+	return membuffer;
+}
+
+int decompile(uint8_t * lrom){
+	return 0;
+}
+
+int main(int argc, char ** argv){
+	uint8_t * lrom; //loaded rom
+
+	lrom = loadFile(argc, argv);
+	decompile(lrom);
+
 	return 0;
 
 }
