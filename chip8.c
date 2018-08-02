@@ -40,19 +40,23 @@ int decompile(uint8_t * lrom){
 	    startsWithZ=0;
 	uint16_t instr = 0x0,
 		 firstN = 0x0,
-		 instrCnt = 0x0;
+		 instrCnt = 0x0,
+		 nib1,
+		 nib2,
+		 nib3,
+		 nib4;
        	size = malloc_usable_size(lrom);
 	while(ip < size){
 		instr = lrom[ip] << 8 | lrom[ip+1];
-		
-		
-		printf("%x  %x %x    ", instrCnt++, instr >> 2, instr & 0x00ff);
 	
 		// Bytes 1-4 retrieved and stored for easier printing and comparison	
-		uint8_t nib1= instr >> 12,
-			nib2= (instr & 0x0f00) >> 8,
-			nib3= (instr & 0x00f0) >> 4,
-			nib4= instr & 0x000f;
+		nib1= instr >> 12,
+		nib2= (instr & 0x0f00) >> 8,
+		nib3= (instr & 0x00f0) >> 4,
+		nib4= instr & 0x000f;
+
+		printf("%#5x  %x%x %x%x    ", instrCnt++, nib1, nib2, nib3, nib4);
+		
 		switch(nib1){
 			// http://devernay.free.fr/hacks/chip8/C8TECH10.HTM for instructions
 			case 0x0:
@@ -102,13 +106,13 @@ int decompile(uint8_t * lrom){
 						printf("SUB V%x, V%x", nib2, nib3);
 						break;
 					case 0x6:
-						printf("SHR V%x {, V%x}", nib2, nib3); // <<<<?
+						printf("SHR V%x {, V%x}", nib2, nib3); 
 						break;
 					case 0x7:
 						printf("SUBN V%x, V%x", nib2, nib3);
 						break;
 					case 0xe:
-						printf("SHL V%x {, V%x}", nib2, nib3); // <<<<?
+						printf("SHL V%x {, V%x}", nib2, nib3); 
 						break;
 					default:
 						printf("ERROR reading 4th nibble for 0x8 code");
