@@ -59,12 +59,11 @@ int decompile(uint8_t * lrom){
 					printf("SYS %x", instr);
 			}
 		} else {
-			firstN = instr >> 12;
 			uint8_t nib1= instr >> 12,
 				nib2= (instr & 0x0f00) >> 8,
 				nib3= (instr & 0x00f0) >> 4,
 				nib4= instr & 0x000f;
-			switch(firstN){
+			switch(nib1){
 				// http://devernay.free.fr/hacks/chip8/C8TECH10.HTM for instructions
 				case 0x1:
 					printf("JP %x", instr & 0x0fff);
