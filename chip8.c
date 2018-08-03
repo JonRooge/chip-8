@@ -203,7 +203,8 @@ int decompile(uint8_t * lrom){
 
 int emulate(uint8_t * lrom){
 	uint8_t mem[RAMSIZE];
-
+	uint16_t stack[16];
+	
 	uint16_t instr,
 		 displayB=0xf00,
 		 displayT=0xfff,
@@ -265,7 +266,7 @@ int emulate(uint8_t * lrom){
 			case 0x1:
 				reg->PC = instr & 0x0fff;
 				break;
-			case 0x2:
+/*FIX*/			case 0x2:
 				reg->SP++;
 				mem[reg->SP] = (reg->PC & 0xff00) >> 8;
 				reg->SP++;
