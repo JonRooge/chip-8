@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <string.h>
+#include <conio.h>
 
 #define RAMSIZE 4096
 
@@ -348,14 +349,13 @@ int emulate(uint8_t * lrom){
 // INCOMPLETE
 				
 				break;
-			case 0xe:
-// INCOMPLETE			
+			case 0xe:		
 				if (byte == 0x9e) {
-					if(reg->V[nib2] == ) reg->PC+=2;		
+					if(kbhit() && reg->V[nib2] == (uint8_t)getch()) 	reg->PC+=2;		
 				}	
 				else if (byte == 0xa1){
-					reg->PC+=2;			
-				}
+					if(kbhit() && reg->V[nib2] != (uint8_t)getch()) 	reg->PC+=2;			
+				} else return 1;
 				break;
 			case 0xf:
 				switch(byte){
