@@ -2,8 +2,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
+#include <string.h>
 
 #define RAMSIZE 4096
+
+struct chip8_registers
+{
+	uint8_t V[16];
+
+	uint16_t I;
+	
+	uint8_t DT,
+		ST;
+
+	uint16_t PC;
+	uint8_t  SP;
+};
+
+
 
 uint8_t * loadFile(int argc, char ** argv){
 	int bytep = 0,
@@ -40,8 +56,9 @@ int decompile(uint8_t * lrom){
 	    startsWithZ=0;
 	uint16_t instr = 0x0,
 		 firstN = 0x0,
-		 instrCnt = 0x0,
-		 nib1,
+		 instrCnt = 0x0;
+	
+	uint8_t	 nib1,
 		 nib2,
 		 nib3,
 		 nib4;
@@ -181,11 +198,186 @@ int decompile(uint8_t * lrom){
 	return 0;
 }
 
+
+
+int emulate(uint8_t * lrom){
+	uint8_t mem[RAMSIZE];
+
+	uint16_t instr,
+		 displayB=0xf00,
+		 displayT=0xfff,
+		 stackB=0xea0,
+		 stackT=0xeff;
+	
+	uint8_t	 size, 
+		 nib1,
+		 nib2,
+		 nib3,
+		 nib4,
+		 byte;
+	struct chip8_registers *reg;
+
+	// END OF DECL
+	// ------------------------------------------------
+	
+	reg->PC = 0x200;
+	reg->SP = stackB;
+
+       	size = malloc_usable_size(lrom);
+	memcpy(&mem[reg->PC], lrom, size * sizeof(uint8_t));
+
+	/*
+	if(loadIntoMemory(lrom, &mem)) {
+		printf("Could not load into memory\n");
+		return 1;	
+	}*/
+
+	printf("STARTING PROGRAM:\n");
+	while(reg->PC < RAMSIZE && reg->PC > -1 && reg->PC <= 0x200 + size){
+		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
+	
+		// Bytes 1-4 retrieved and stored for easier printing and comparison	
+		nib1= instr >> 12;
+		nib2= (instr & 0x0f00) >> 8;
+		nib3= (instr & 0x00f0) >> 4;
+		nib4= instr & 0x000f;
+		byte= instr & 0x00ff;
+		
+		switch(nib1){
+			// http://devernay.free.fr/hacks/chip8/C8TECH10.HTM for instructions
+			case 0x0:
+				if 	(byte == 0x00ee) {
+					reg->PC	= reg->SP;
+					reg->SP--;
+				}
+				else if (byte == 0x00e0)	printf("CLS");
+				else 				reg->I = instr & 0x0fff;
+				break;
+			case 0x1:
+				reg->PC = instr & 0x0fff;
+				break;
+			case 0x2:
+				reg->SP++;
+				mem[reg->SP] = (reg->PC & 0xff00) >> 8;
+				reg->SP++;
+				mem[reg->SP] = reg->PC & 0x00ff;
+
+
+				break;
+			case 0x3:
+				if(reg->V[nib2] == byte)		reg->PC+=2;
+				break;
+			case 0x4:
+				if(reg->V[nib2] != byte)		reg->PC+=2;
+				break;
+			case 0x5:
+				if(reg->V[nib2] == reg->V[nib3])	reg->PC+=2;
+				break;
+			case 0x6:
+				reg->V[nib2] = byte;
+				break;
+			case 0x7:
+				reg->V[nib2] += byte;
+				break;
+			case 0x8:
+				switch(nib4){
+					case 0x0:
+						reg->V[nib2] = reg->V[nib3];
+						break;
+					case 0x1:
+						reg->V[nib2] = reg->V[nib2] | reg->V[nib3];
+						break;
+					case 0x2:
+						printf("AND V%x, V%x", nib2, nib3);
+						break;
+					case 0x3:
+						printf("XOR V%x, V%x", nib2, nib3);
+						break;
+					case 0x4:
+						printf("ADD V%x, V%x", nib2, nib3);
+						break;
+					case 0x5:
+						printf("SUB V%x, V%x", nib2, nib3);
+						break;
+					case 0x6:
+						printf("SHR V%x {, V%x}", nib2, nib3); 
+						break;
+					case 0x7:
+						printf("SUBN V%x, V%x", nib2, nib3);
+						break;
+					case 0xe:
+						printf("SHL V%x {, V%x}", nib2, nib3); 
+						break;
+					default:
+						break;
+				}
+				break;
+			case 0x9:
+				printf("SNE V%x, V%x", nib2, nib3);
+				break;
+			case 0xa:
+				printf("LD I, %x", instr & 0x0fff);
+				break;
+			case 0xb:
+				printf("JP V0, %x", instr & 0x0fff);
+				break;
+			case 0xc:
+				printf("RND V%x, V%x", nib2, instr & 0x00ff);
+				break;
+			case 0xd:
+				printf("DRW V%x, V%x, %x", nib2, nib3, nib4);
+				break;
+			case 0xe:
+				if 	((nib3 << 4 | nib4) == 0x9e) 	printf("SKP V%x", nib2);
+				else if ((nib3 << 4 | nib4) == 0xa1)	printf("SKNP V%x", nib2);
+				break;
+			case 0xf:
+				switch(instr & 0x00ff){
+					case 0x07:
+						printf("LD V%x, DT", nib2);
+						break;
+					case 0x0a:
+						printf("LD V%x, K", nib2);
+						break;
+					case 0x15:
+						printf("LD DT, V%x", nib2);
+						break;
+					case 0x18:
+						printf("LD ST, V%x", nib2);
+						break;
+					case 0x1e:
+						printf("ADD I, V%x", nib2);
+						break;
+					case 0x29:
+						printf("LD F, V%x", nib2);
+						break;
+					case 0x33:
+						printf("LD B, V%x", nib2);
+						break;
+					case 0x55:
+						printf("LD [I], V%x", nib2);
+						break;
+					case 0x65:
+						printf("LD V%x, [I]", nib2);
+						break;
+					default:
+						break;
+				}
+				break;
+			default:
+			      break;
+		}
+		reg->PC+=2; // Each instruction is 2 bytes
+	}
+	return 0;
+}
+
 int main(int argc, char ** argv){
 	uint8_t * lrom; //loaded rom
 
 	lrom = loadFile(argc, argv);
 	decompile(lrom);
+	emulate(lrom);
 
 	return 0;
 
