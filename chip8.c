@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
@@ -207,15 +208,20 @@ int emulate(uint8_t * lrom){
 		 displayB=0xf00,
 		 displayT=0xfff,
 		 stackB=0xea0,
-		 stackT=0xeff;
+		 stackT=0xeff,
+		 add,
+		 sub;
 	
 	uint8_t	 size, 
 		 nib1,
 		 nib2,
 		 nib3,
 		 nib4,
-		 byte;
+		 byte,
+		 r;
 	struct chip8_registers *reg;
+	
+	srand(time(NULL));
 
 	// END OF DECL
 	// ------------------------------------------------
@@ -285,47 +291,57 @@ int emulate(uint8_t * lrom){
 						reg->V[nib2] = reg->V[nib3];
 						break;
 					case 0x1:
-						reg->V[nib2] = reg->V[nib2] | reg->V[nib3];
+						reg->V[nib2] |= reg->V[nib3];
 						break;
 					case 0x2:
-						printf("AND V%x, V%x", nib2, nib3);
+						reg->V[nib2] &= reg->V[nib3];
 						break;
 					case 0x3:
-						printf("XOR V%x, V%x", nib2, nib3);
+						reg->V[nib2] ^= reg->V[nib3];
 						break;
 					case 0x4:
-						printf("ADD V%x, V%x", nib2, nib3);
+						add = reg->V[nib2] + reg->V[nib3];
+						reg->V[nib2] = (uint8_t) add;
+						reg->V[0xf] = (add > 0xff); 
 						break;
 					case 0x5:
-						printf("SUB V%x, V%x", nib2, nib3);
+						sub = reg->V[nib2] - reg->V[nib3];
+						reg->V[nib2] = (uint8_t) sub;
+						reg->V[0xf] = (sub > 0); 
 						break;
 					case 0x6:
-						printf("SHR V%x {, V%x}", nib2, nib3); 
+						reg->V[0xf] &= 0x1;
+						reg->V[nib2] >>= 1;
 						break;
 					case 0x7:
-						printf("SUBN V%x, V%x", nib2, nib3);
+						sub = reg->V[nib3] - reg->V[nib2];
+						reg->V[nib2] = (uint8_t) sub;
+						reg->V[0xf] = (sub > 0); 
 						break;
 					case 0xe:
-						printf("SHL V%x {, V%x}", nib2, nib3); 
+						reg->V[0xf] = (reg->V[0xf] >> 7 & 0x1);
+						reg->V[nib2] <<= 1;
 						break;
 					default:
+						printf("UNKNOWN CMD: %x\n", instr);
 						break;
 				}
 				break;
 			case 0x9:
-				printf("SNE V%x, V%x", nib2, nib3);
+				if(reg->V[nib2] != reg->V[nib3])	reg->PC+=2;
 				break;
 			case 0xa:
-				printf("LD I, %x", instr & 0x0fff);
+				reg->I = instr & 0x0fff;
 				break;
 			case 0xb:
-				printf("JP V0, %x", instr & 0x0fff);
+				reg->PC = reg->V[0] + (instr & 0x0fff);
 				break;
 			case 0xc:
-				printf("RND V%x, V%x", nib2, instr & 0x00ff);
+				r = rand() % 0xff;
+				reg->V[nib2] = r & byte;
 				break;
 			case 0xd:
-				printf("DRW V%x, V%x, %x", nib2, nib3, nib4);
+
 				break;
 			case 0xe:
 				if 	((nib3 << 4 | nib4) == 0x9e) 	printf("SKP V%x", nib2);
@@ -361,11 +377,13 @@ int emulate(uint8_t * lrom){
 						printf("LD V%x, [I]", nib2);
 						break;
 					default:
+						printf("UNKNOWN CMD: %x\n", instr);
 						break;
 				}
 				break;
 			default:
-			      break;
+				printf("UNKNOWN CMD: %x\n", instr);
+				break;
 		}
 		reg->PC+=2; // Each instruction is 2 bytes
 	}
