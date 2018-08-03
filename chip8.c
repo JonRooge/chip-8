@@ -376,18 +376,20 @@ int emulate(uint8_t * lrom){
 						reg->I += reg->V[nib2];
 						break;
 					case 0x29:
-// INCOMPLETE						reg->I = *reg->V[nib2]; //this is a guess, I need to return to this
+						reg->I = &reg->V[nib2]; //this is a guess, I need to return to this
 						break;
-					case 0x33:
-// INCOMPLETE						
+					case 0x33:	
+						mem[reg->I] = (int)reg->V[nib2] / 100;
+						mem[reg->I+1] = ((int)reg->V[nib2] / 100) / 10;
+						mem[reg->I+2] = (((int)reg->V[nib2] / 100) / 10) / 1;
 						break;
 					case 0x55:
-						for(i=0; i<reg->V[nib2]; i++){ // Is this OP inclusive?
+						for(i=0; i<=nib2; i++){ // OP is inclusive
 							mem[reg->I + i] = reg->V[i];
 						}
 						break;
 					case 0x65:
-						for(i=0; i<reg->V[nib2]; i++){ 
+						for(i=0; i<=nib2; i++){ 
 							reg->V[i] = mem[reg->I + i]; 
 						}
 						break;
