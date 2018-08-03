@@ -219,6 +219,9 @@ int emulate(uint8_t * lrom){
 		 nib4,
 		 byte,
 		 r;
+
+	int i;
+
 	struct chip8_registers *reg;
 	
 	srand(time(NULL));
@@ -341,40 +344,51 @@ int emulate(uint8_t * lrom){
 				reg->V[nib2] = r & byte;
 				break;
 			case 0xd:
-
+// INCOMPLETE
+				
 				break;
 			case 0xe:
-				if 	((nib3 << 4 | nib4) == 0x9e) 	printf("SKP V%x", nib2);
-				else if ((nib3 << 4 | nib4) == 0xa1)	printf("SKNP V%x", nib2);
+// INCOMPLETE			
+				if (byte == 0x9e) {
+					if(reg->V[nib2] == ) reg->PC+=2;		
+				}	
+				else if (byte == 0xa1){
+					reg->PC+=2;			
+				}
 				break;
 			case 0xf:
-				switch(instr & 0x00ff){
+				switch(byte){
 					case 0x07:
-						printf("LD V%x, DT", nib2);
+						reg->V[nib2] = reg->DT;
 						break;
 					case 0x0a:
-						printf("LD V%x, K", nib2);
+						reg->V[nib2] = (uint8_t) getchar();
 						break;
 					case 0x15:
-						printf("LD DT, V%x", nib2);
+						reg->DT = reg->V[nib2];
 						break;
 					case 0x18:
-						printf("LD ST, V%x", nib2);
+						reg->ST = reg->V[nib2];
 						break;
 					case 0x1e:
-						printf("ADD I, V%x", nib2);
+						if(reg->I + reg->V[nib2] > 0xfff) return 1; // I is not allowed above 0x0fff so we error out of program.
+						reg->I += reg->V[nib2];
 						break;
 					case 0x29:
-						printf("LD F, V%x", nib2);
+// INCOMPLETE						reg->I = *reg->V[nib2]; //this is a guess, I need to return to this
 						break;
 					case 0x33:
-						printf("LD B, V%x", nib2);
+// INCOMPLETE						
 						break;
 					case 0x55:
-						printf("LD [I], V%x", nib2);
+						for(i=0; i<reg->V[nib2]; i++){ // Is this OP inclusive?
+							mem[reg->I + i] = reg->V[i];
+						}
 						break;
 					case 0x65:
-						printf("LD V%x, [I]", nib2);
+						for(i=0; i<reg->V[nib2]; i++){ 
+							reg->V[i] = mem[reg->I + i]; 
+						}
 						break;
 					default:
 						printf("UNKNOWN CMD: %x\n", instr);
