@@ -12,6 +12,8 @@ Everything is in one file due to the way I think through things. I may separate 
 `./chip8.exe <path_to_rom>`
 
 ### functions
-`ESC` exits the program safely.
-
-Running will start by spitting out the ROM raw, followed by a disassembly output, followed by trying to run it. I use this format for debugging. Planning to change it to accept a choice if you want to run either the disassembler or the program.
+* 0 - Shows raw rom data
+* 1 - Decompiles loaded rom
+* 2 - Run program (ESC to quit safely)
+  * `ESC` exits the program safely.
+* 3 - Quit menu
