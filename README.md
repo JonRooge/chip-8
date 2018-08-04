@@ -3,13 +3,13 @@ Chip 8 disassembler and emulator
 
 ## compile
 
-`gcc chip8.c -lcurses`
+`gcc -o chip8 chip8.c -lcurses`
 
 Requires ncurses library installed.
 Everything is in one file due to the way I think through things. I may separate out functionality into multiple c and h files after I hit a certain point.
 
 ## run
-`<prog_name> <path_to_rom>`
+`./chip8.exe <path_to_rom>`
 
 ### functions
 `ESC` exits the program safely.
