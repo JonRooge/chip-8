@@ -8,6 +8,7 @@
 //#include <SDL/SDL.h>
 
 #define RAMSIZE 4096
+#define ESC 27
 
 struct chip8_registers
 {
@@ -26,6 +27,19 @@ int cleanup(){
 	endwin();
 	//free();
 	return 0;
+}
+
+void delay(int number_of_milli)
+{
+    // Converting time into milli_seconds
+    int milli_seconds = number_of_milli;
+
+    // Stroing start time
+    clock_t start_time = clock();
+
+    // looping till required time is not acheived
+    while (clock() < start_time + milli_seconds)
+        ;
 }
 
 uint8_t * loadFile(int argc, char ** argv){
@@ -49,11 +63,11 @@ uint8_t * loadFile(int argc, char ** argv){
 	if(argc == 1 || fsize <= 1){
 		printf("Failed to load file.");
 	}
-	printf("ROM BYTE CODE:\n");
-	while(bytep != fsize){
-		printf("%x ", membuffer[bytep]);
-		bytep++;
-	}
+	printf("ROM LOADED\n");
+	//while(bytep != fsize){
+	//	printf("%x ", membuffer[bytep]);
+	//	bytep++;
+	//}
 	printf("\n");
 	return membuffer;
 }
@@ -206,7 +220,24 @@ int decompile(uint8_t * lrom){
 	return 0;
 }
 
-
+WINDOW * startWin(){
+	initscr();	
+	noecho();
+	//cbreak();
+	curs_set(FALSE);
+	// 64x32 window size
+	//	printf("%d, %d, %d, %d\n", LINES, COLS, winX0, winY0);
+	//keypad(stdscr, TRUE);
+	
+	int winW = 64,
+	    winH = 32,
+	    winX0 = (LINES/2)-(winH/2),
+	    winY0 = (COLS/2)-(winW/2);
+	
+	WINDOW * window = newwin(winH, winW, winX0, winY0);
+	wborder(window,0,0,0,0,0,0,0,0);
+	return window;
+}
 
 int emulate(uint8_t * lrom){
 	uint8_t mem[RAMSIZE];
@@ -259,10 +290,8 @@ int emulate(uint8_t * lrom){
 	// END OF DECL
 	// ------------------------------------------------
 	
-	initscr();
-	
-	noecho();
-	curs_set(FALSE);
+	WINDOW * win = startWin();	
+
 
 	reg->PC = 0x200;
 	reg->SP = stackB;
@@ -276,7 +305,7 @@ int emulate(uint8_t * lrom){
 	}
 	
 	printf("STARTING PROGRAM:\n");
-	while(reg->PC < RAMSIZE && reg->PC > -1 && reg->PC <= 0x200 + size){
+	while(reg->PC < RAMSIZE && reg->PC > -1 && reg->PC <= 0x200 + size && wgetch(win) != ESC){
 		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
 	
 		// NOTE: Bytes 1-4 retrieved and stored for easier printing and comparison	
@@ -297,7 +326,7 @@ int emulate(uint8_t * lrom){
 					reg->PC	= reg->PC | (mem[reg->SP] << 8);
 					reg->SP--;
 				}
-				else if (byte == 0x00e0)	clear();
+				else if (byte == 0x00e0)	wclear(win);
 				else 				reg->PC = instr & 0x0fff;
 				break;
 			case 0x1:
@@ -396,15 +425,15 @@ int emulate(uint8_t * lrom){
 					}
 				}
 				break;
-			case 0xe:		
+			case 0xe:	
 				if (byte == 0x9e) {
-					key = getch();
+					key = wgetch(win);
 					if(key > -1 && key == reg->V[nib2]) 	reg->PC+=2;		
 				}	
 				else if (byte == 0xa1){
-					key = getch();
+					key = wgetch(win);
 					if(key > -1 && key != reg->V[nib2]) 	reg->PC+=2;			
-				} else return 1;
+				}
 				break;
 			case 0xf:
 				switch(byte){
@@ -412,7 +441,9 @@ int emulate(uint8_t * lrom){
 						reg->V[nib2] = reg->DT;
 						break;
 					case 0x0a:
-						reg->V[nib2] = (uint8_t) getchar();
+						wtimeout(win, -1);	
+						reg->V[nib2] = (uint8_t) wgetch(win);
+						wtimeout(win, 0);
 						break;
 					case 0x15:
 						reg->DT = reg->V[nib2];
@@ -463,15 +494,17 @@ int emulate(uint8_t * lrom){
 		
 		for (int a=displayB; a<displayT; a+=8){
 			for (int b=0; b<8; b++){
-				move(a-displayB, b);
 				if(mem[a+b] == 1)
-					addch(ACS_CKBOARD);
+					mvwaddch(win, a-displayB, b, ACS_BLOCK);
 				else
-					addch(' ');
+					mvwaddch(win, a-displayB, b, ' ');
 			}
 		}
-		refresh();
+		wrefresh(win);
+
+		//getchar();
 		reg->PC+=2; 											// NOTE: Each instruction is 2 bytes
+		//delay(200);
 	}
 	return 0;
 }
