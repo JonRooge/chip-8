@@ -224,7 +224,7 @@ int decompile(uint8_t * lrom){
 
 WINDOW * startWin(){
 	initscr();	
-	noecho();
+	//noecho();
 	//cbreak();
 	curs_set(FALSE);
 	// 64x32 window size
@@ -292,6 +292,7 @@ int emulate(uint8_t * lrom){
 	// END OF DECL
 	// ------------------------------------------------
 	
+
 	WINDOW * win = startWin();	
 
 
@@ -309,7 +310,14 @@ int emulate(uint8_t * lrom){
 	printf("STARTING PROGRAM:\n");
 	while(reg->PC < RAMSIZE && reg->PC > -1 && reg->PC <= 0x200 + size && wgetch(win) != ESC){
 		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
-	
+		
+		/* DEBUG */
+		
+		//printf("Instruction: %x\nPC: %x\nSP: %x\n", instr, reg->PC, reg->SP);
+		//getchar();
+		
+		/* END DEBUG */
+
 		// NOTE: Bytes 1-4 retrieved and stored for easier printing and comparison	
 		nib1= instr >> 12;
 		nib2= (instr & 0x0f00) >> 8;
@@ -327,12 +335,17 @@ int emulate(uint8_t * lrom){
 					reg->SP--;
 					reg->PC	= reg->PC | (mem[reg->SP] << 8);
 					reg->SP--;
+					reg->PC-=2; 			//  because at the end it inc by 2 everytime, so i need to balance it.
 				}
 				else if (byte == 0x00e0)	wclear(win);
-				else 				reg->PC = instr & 0x0fff;
+				else {
+					reg->PC = instr & 0x0fff;
+					reg->PC-=2; 			//  because at the end it inc by 2 everytime, so i need to balance it.
+				}
 				break;
 			case 0x1:
 				reg->PC = instr & 0x0fff;
+				reg->PC-=2; 				//  because at the end it inc by 2 everytime, so i need to balance it.
 				break;
 			case 0x2:
 				reg->SP++;
@@ -340,6 +353,7 @@ int emulate(uint8_t * lrom){
 				reg->SP++;
 				mem[reg->SP] = reg->PC & 0x00ff;
 				reg->PC = instr & 0x0fff; 
+				reg->PC-=2; 				// because at the end it inc by 2 everytime, so i need to balance it.
 				break;
 			case 0x3:
 				if(reg->V[nib2] == byte)		reg->PC+=2;
@@ -406,6 +420,7 @@ int emulate(uint8_t * lrom){
 				break;
 			case 0xb:
 				reg->PC = reg->V[0] + (instr & 0x0fff);
+				reg->PC-=2; 			//  because at the end it inc by 2 everytime, so i need to balance it.
 				break;
 			case 0xc:
 				r = rand() % 0xff;
@@ -523,7 +538,6 @@ int main(int argc, char ** argv){
 		scanf(" %d", &ch);
 		switch(ch){
 			case 0:
-				printf("OPTION1 \n");
 				loadFile(argc, argv, 1);
 				break;
 			case 1:
@@ -533,6 +547,7 @@ int main(int argc, char ** argv){
 				if(emulate(lrom)){
 					printf("\nEmulator error...\n");
 				}
+				cleanup();
 				break;
 			case 3:
 				break;
@@ -540,7 +555,6 @@ int main(int argc, char ** argv){
 				printf("\nUnknown option...\n\n");
 		}
 	}
-	cleanup();
 
 	return 0;
 
