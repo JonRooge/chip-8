@@ -224,9 +224,9 @@ int decompile(uint8_t * lrom){
 
 WINDOW * startWin(){
 	initscr();	
-	//noecho();
-	//cbreak();
-	curs_set(FALSE);
+	noecho();
+	cbreak();
+	//curs_set(FALSE);
 	// 64x32 window size
 	//	printf("%d, %d, %d, %d\n", LINES, COLS, winX0, winY0);
 	//keypad(stdscr, TRUE);
@@ -236,8 +236,14 @@ WINDOW * startWin(){
 	    winX0 = (LINES/2)-(winH/2),
 	    winY0 = (COLS/2)-(winW/2);
 	
-	WINDOW * window = newwin(winH, winW, winX0, winY0);
-	wborder(window,0,0,0,0,0,0,0,0);
+	//WINDOW * box = newwin(winH+2, winW+2, winX0-2, winY0-2);
+	WINDOW * window = newwin(winH+2, winW+2, winX0-2, winY0-2);
+	wborder(window,0,0,0,0,ACS_ULCORNER,
+				ACS_URCORNER,
+				ACS_LLCORNER,
+				ACS_LRCORNER);
+	wtimeout(window,0);
+	//nodelay(TRUE)
 	return window;
 }
 
@@ -429,11 +435,12 @@ int emulate(uint8_t * lrom){
 			case 0xd:
 
 				// Found online
+				// First write into memory
 				reg->V[0xf] = 0;
 				for (int y=0; y<nib4; y++){
 					pixel = mem[reg->I + y];
 					for (int x=0; x<8; x++){
-						if(pixel & (0x80 >> x) != 0){
+						if((pixel & (0x80 >> x)) != 0){
 							if(mem[(nib2 + x + ((nib3 + y) * 64))] == 1){
 								reg->V[0xf] = 1;
 							}
@@ -441,6 +448,16 @@ int emulate(uint8_t * lrom){
 						}
 					}
 				}
+				//Draw memory to screen (This might be redundant)
+				for (int a=displayB; a<displayT; a+=8){
+					for (int b=0; b<8; b++){
+						if(mem[a+b] >= 1)
+							mvwaddch(win, a-displayB, b, ACS_BLOCK);
+						else
+							mvwaddch(win, a-displayB, b, ' ');
+					}
+				}
+				wrefresh(win);
 				break;
 			case 0xe:	
 				if (byte == 0x9e) {
@@ -509,15 +526,6 @@ int emulate(uint8_t * lrom){
 				break;
 		}
 		
-		for (int a=displayB; a<displayT; a+=8){
-			for (int b=0; b<8; b++){
-				if(mem[a+b] == 1)
-					mvwaddch(win, a-displayB, b, ACS_BLOCK);
-				else
-					mvwaddch(win, a-displayB, b, ' ');
-			}
-		}
-		wrefresh(win);
 
 		//getchar();
 		reg->PC+=2; 											// NOTE: Each instruction is 2 bytes
