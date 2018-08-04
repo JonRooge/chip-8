@@ -11,7 +11,7 @@ Everything is in one file due to the way I think through things. I may separate 
 ## run
 `./chip8.exe <path_to_rom>`
 
-### functions
+### functions in main menu
 * 0 - Shows raw rom data
 * 1 - Decompiles loaded rom
 * 2 - Run program (ESC to quit safely)
