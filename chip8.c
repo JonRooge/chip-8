@@ -22,7 +22,11 @@ struct chip8_registers
 	uint8_t  SP;
 };
 
-
+int cleanup(){
+	endwin();
+	//free();
+	return 0;
+}
 
 uint8_t * loadFile(int argc, char ** argv){
 	int bytep = 0,
@@ -222,7 +226,8 @@ int emulate(uint8_t * lrom){
 		 nib3,
 		 nib4,
 		 byte,
-		 r;
+		 r,
+		 pixel;
 
 	int i;
 	int8_t key;
@@ -254,13 +259,18 @@ int emulate(uint8_t * lrom){
 	// END OF DECL
 	// ------------------------------------------------
 	
+	initscr();
+	
+	noecho();
+	curs_set(FALSE);
+
 	reg->PC = 0x200;
 	reg->SP = stackB;
 
        	size = malloc_usable_size(lrom);
 	memcpy(&mem[reg->PC], lrom, size * sizeof(uint8_t));
 
-	// Load sprites
+	// NOTE: Load sprites
 	for (i=0; i<80; i++){
 		mem[i] = sprite[i];
 	}
@@ -269,7 +279,7 @@ int emulate(uint8_t * lrom){
 	while(reg->PC < RAMSIZE && reg->PC > -1 && reg->PC <= 0x200 + size){
 		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
 	
-		// Bytes 1-4 retrieved and stored for easier printing and comparison	
+		// NOTE: Bytes 1-4 retrieved and stored for easier printing and comparison	
 		nib1= instr >> 12;
 		nib2= (instr & 0x0f00) >> 8;
 		nib3= (instr & 0x00f0) >> 4;
@@ -277,25 +287,28 @@ int emulate(uint8_t * lrom){
 		byte= instr & 0x00ff;
 		
 		switch(nib1){
-			// http://devernay.free.fr/hacks/chip8/C8TECH10.HTM for instructions
+
+			// NOTE: http://devernay.free.fr/hacks/chip8/C8TECH10.HTM for instructions
+			
 			case 0x0:
 				if 	(byte == 0x00ee) {
-					reg->PC	= reg->SP;
+					reg->PC	= mem[reg->SP];
+					reg->SP--;
+					reg->PC	= reg->PC | (mem[reg->SP] << 8);
 					reg->SP--;
 				}
-/*FIX*/				else if (byte == 0x00e0)	printf("CLS");
-				else 				reg->I = instr & 0x0fff;
+				else if (byte == 0x00e0)	clear();
+				else 				reg->PC = instr & 0x0fff;
 				break;
 			case 0x1:
 				reg->PC = instr & 0x0fff;
 				break;
-/*FIX*/			case 0x2:
+			case 0x2:
 				reg->SP++;
 				mem[reg->SP] = (reg->PC & 0xff00) >> 8;
 				reg->SP++;
 				mem[reg->SP] = reg->PC & 0x00ff;
-
-
+				reg->PC = instr & 0x0fff; 
 				break;
 			case 0x3:
 				if(reg->V[nib2] == byte)		reg->PC+=2;
@@ -368,8 +381,20 @@ int emulate(uint8_t * lrom){
 				reg->V[nib2] = r & byte;
 				break;
 			case 0xd:
-// INCOMPLETE
-				
+
+				// Found online
+				reg->V[0xf] = 0;
+				for (int y=0; y<nib4; y++){
+					pixel = mem[reg->I + y];
+					for (int x=0; x<8; x++){
+						if(pixel & (0x80 >> x) != 0){
+							if(mem[(nib2 + x + ((nib3 + y) * 64))] == 1){
+								reg->V[0xf] = 1;
+							}
+							mem[nib2 + x + ((nib3 + y) * 64)] ^= 1;
+						}
+					}
+				}
 				break;
 			case 0xe:		
 				if (byte == 0x9e) {
@@ -377,6 +402,7 @@ int emulate(uint8_t * lrom){
 					if(key > -1 && key == reg->V[nib2]) 	reg->PC+=2;		
 				}	
 				else if (byte == 0xa1){
+					key = getch();
 					if(key > -1 && key != reg->V[nib2]) 	reg->PC+=2;			
 				} else return 1;
 				break;
@@ -395,23 +421,28 @@ int emulate(uint8_t * lrom){
 						reg->ST = reg->V[nib2];
 						break;
 					case 0x1e:
-						if(reg->I + reg->V[nib2] > 0xfff) return 1; // I is not allowed above 0x0fff so we error out of program.
+						if(reg->I + reg->V[nib2] > 0xfff) {
+							cleanup();
+							return 1;;
+						}								// NOTE: I is not allowed above 0x0fff so we error out of program.
 						reg->I += reg->V[nib2];
 						break;
 					case 0x29:
-						// In the sprite section of memory, before every 5 byte sprite (0-F), is the byte that the next 5 elements represent.
+						
+						// NOTE: In the sprite section of memory, before every 5 byte sprite (0-F), is the byte that the next 5 elements represent.
+						
 						for(i=0; i<spArrLen; i+=6)
 							if(reg->V[nib2] == mem[i]) {
-								reg->I = (uint16_t) i+1; // + SpriteOffset; UNUSED because I put the sprite array at mem location 0.
+								reg->I = (uint16_t) i+1; 			// + SpriteOffset; NOTE: UNUSED because I put the sprite array at mem location 0.
 							}
 						break;
 					case 0x33:	
 						mem[reg->I] = (int)reg->V[nib2] / 100;
-						mem[reg->I+1] = ((int)reg->V[nib2] / 100) / 10;
-						mem[reg->I+2] = (((int)reg->V[nib2] / 100) / 10) / 1;
+						mem[reg->I+1] = ((int)reg->V[nib2] % 100) / 10;
+						mem[reg->I+2] = (((int)reg->V[nib2] & 100) % 10);
 						break;
 					case 0x55:
-						for(i=0; i<=nib2; i++){ // OP is inclusive
+						for(i=0; i<=nib2; i++){ 					// NOTE: OP is inclusive
 							mem[reg->I + i] = reg->V[i];
 						}
 						break;
@@ -429,17 +460,31 @@ int emulate(uint8_t * lrom){
 				printf("UNKNOWN CMD: %x\n", instr);
 				break;
 		}
-		reg->PC+=2; // Each instruction is 2 bytes
+		
+		for (int a=displayB; a<=displayT; a+=8){
+			for (int b=0; b<8; b++){
+				move(a-displayB, b);
+				if(mem[a+b] == 1)
+					addch(ACS_CKBOARD);
+				else
+					addch(' ');
+			}
+		}
+		refresh();
+		reg->PC+=2; 											// NOTE: Each instruction is 2 bytes
 	}
+	cleanup();
 	return 0;
 }
 
 int main(int argc, char ** argv){
-	uint8_t * lrom; //loaded rom
+	uint8_t * lrom; 											//NOTE: stands for 'loaded rom'
 
 	lrom = loadFile(argc, argv);
-	decompile(lrom);
-	emulate(lrom);
+	//decompile(lrom);
+	if(emulate(lrom)){
+		printf("Uh oh...");
+	}
 
 	return 0;
 
