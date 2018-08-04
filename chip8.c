@@ -18,8 +18,8 @@ struct chip8_registers
 	uint8_t DT,
 		ST;
 
-	uint16_t PC;
-	uint8_t  SP;
+	uint16_t PC,
+		 SP;
 };
 
 int cleanup(){
@@ -213,10 +213,10 @@ int emulate(uint8_t * lrom){
 	uint16_t stack[16];
 	
 	uint16_t instr,
-		 displayB=0xf00,
-		 displayT=0xfff,
-		 stackB=0xea0,
-		 stackT=0xeff,
+		 displayB=0x0f00,
+		 displayT=0x0fff,
+		 stackB=0x0ea0,
+		 stackT=0x0eff,
 		 add,
 		 sub;
 	
@@ -232,7 +232,7 @@ int emulate(uint8_t * lrom){
 	int i;
 	int8_t key;
 
-	struct chip8_registers *reg;
+	struct chip8_registers *reg= malloc(sizeof(struct chip8_registers*));
 	
 	int spArrLen = 96;
 	uint8_t sprite[] = {
@@ -461,7 +461,7 @@ int emulate(uint8_t * lrom){
 				break;
 		}
 		
-		for (int a=displayB; a<=displayT; a+=8){
+		for (int a=displayB; a<displayT; a+=8){
 			for (int b=0; b<8; b++){
 				move(a-displayB, b);
 				if(mem[a+b] == 1)
@@ -473,7 +473,6 @@ int emulate(uint8_t * lrom){
 		refresh();
 		reg->PC+=2; 											// NOTE: Each instruction is 2 bytes
 	}
-	cleanup();
 	return 0;
 }
 
@@ -485,6 +484,7 @@ int main(int argc, char ** argv){
 	if(emulate(lrom)){
 		printf("Uh oh...");
 	}
+	cleanup();
 
 	return 0;
 
