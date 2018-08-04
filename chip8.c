@@ -4,7 +4,8 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <string.h>
-#include <conio.h>
+#include <ncurses.h>
+//#include <SDL/SDL.h>
 
 #define RAMSIZE 4096
 
@@ -27,6 +28,7 @@ uint8_t * loadFile(int argc, char ** argv){
 	int bytep = 0,
 	    fsize = 0;
 	uint8_t * membuffer;
+	
 	FILE * fp = fopen(argv[1], "r");
 
 	fseek(fp, 0, SEEK_END);
@@ -223,9 +225,30 @@ int emulate(uint8_t * lrom){
 		 r;
 
 	int i;
+	int8_t key;
 
 	struct chip8_registers *reg;
 	
+	int spArrLen = 96;
+	uint8_t sprite[] = {
+		0x0, 0xF0,0x90,0x90,0x90,0xF0,  //0
+		0x1, 0x20,0x60,0x20,0x20,0x70,  //1
+		0x2, 0xF0,0x10,0xF0,0x80,0xF0,  //2
+		0x3, 0xF0,0x10,0xF0,0x10,0xF0,  //3
+		0x4, 0x90,0x90,0xF0,0x10,0x10,  //4
+		0x5, 0xF0,0x80,0xF0,0x10,0xF0,  //5
+		0x6, 0xF0,0x80,0xF0,0x90,0xF0,  //6
+		0x7, 0xF0,0x10,0x20,0x40,0x40,  //7
+		0x8, 0xF0,0x90,0xF0,0x90,0xF0,  //8
+		0x9, 0xF0,0x90,0xF0,0x10,0xF0,  //9
+		0xa, 0xF0,0x90,0xF0,0x90,0x90,  //a
+		0xb, 0xE0,0x90,0xE0,0x90,0xE0,  //b
+		0xc, 0xF0,0x80,0x80,0x80,0xF0,  //c
+		0xd, 0xE0,0x90,0x90,0x90,0xE0,  //d
+		0xe, 0xF0,0x80,0xF0,0x80,0xF0,  //e
+		0xf, 0xF0,0x80,0xF0,0x80,0x80   //f
+	};
+
 	srand(time(NULL));
 
 	// END OF DECL
@@ -237,12 +260,11 @@ int emulate(uint8_t * lrom){
        	size = malloc_usable_size(lrom);
 	memcpy(&mem[reg->PC], lrom, size * sizeof(uint8_t));
 
-	/*
-	if(loadIntoMemory(lrom, &mem)) {
-		printf("Could not load into memory\n");
-		return 1;	
-	}*/
-
+	// Load sprites
+	for (i=0; i<80; i++){
+		mem[i] = sprite[i];
+	}
+	
 	printf("STARTING PROGRAM:\n");
 	while(reg->PC < RAMSIZE && reg->PC > -1 && reg->PC <= 0x200 + size){
 		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
@@ -261,7 +283,7 @@ int emulate(uint8_t * lrom){
 					reg->PC	= reg->SP;
 					reg->SP--;
 				}
-				else if (byte == 0x00e0)	printf("CLS");
+/*FIX*/				else if (byte == 0x00e0)	printf("CLS");
 				else 				reg->I = instr & 0x0fff;
 				break;
 			case 0x1:
@@ -351,10 +373,11 @@ int emulate(uint8_t * lrom){
 				break;
 			case 0xe:		
 				if (byte == 0x9e) {
-					if(kbhit() && reg->V[nib2] == (uint8_t)getch()) 	reg->PC+=2;		
+					key = getch();
+					if(key > -1 && key == reg->V[nib2]) 	reg->PC+=2;		
 				}	
 				else if (byte == 0xa1){
-					if(kbhit() && reg->V[nib2] != (uint8_t)getch()) 	reg->PC+=2;			
+					if(key > -1 && key != reg->V[nib2]) 	reg->PC+=2;			
 				} else return 1;
 				break;
 			case 0xf:
@@ -376,7 +399,11 @@ int emulate(uint8_t * lrom){
 						reg->I += reg->V[nib2];
 						break;
 					case 0x29:
-						reg->I = &reg->V[nib2]; //this is a guess, I need to return to this
+						// In the sprite section of memory, before every 5 byte sprite (0-F), is the byte that the next 5 elements represent.
+						for(i=0; i<spArrLen; i+=6)
+							if(reg->V[nib2] == mem[i]) {
+								reg->I = (uint16_t) i+1; // + SpriteOffset; UNUSED because I put the sprite array at mem location 0.
+							}
 						break;
 					case 0x33:	
 						mem[reg->I] = (int)reg->V[nib2] / 100;
