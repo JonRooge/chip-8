@@ -410,7 +410,7 @@ int emulate(uint8_t * lrom){
 						reg->V[0xf] = (sub > 0); 
 						break;
 					case 0xe:
-						reg->V[0xf] = (reg->V[0xf] >> 7 & 0x1);
+						reg->V[0xf] = (reg->V[nib2] >> 7 & 0x1);
 						reg->V[nib2] <<= 1;
 						break;
 					default:
