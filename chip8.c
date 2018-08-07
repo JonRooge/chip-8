@@ -448,14 +448,24 @@ int emulate(uint8_t * lrom){
 					}
 				}
 				//Draw memory to screen
-				for (int a=displayB; a<displayT; a+=64){
+				
+				move(0,0);
+				for(int loc = displayB; loc < displayT; loc++){
+					if(mem[loc] == 1)
+						waddch(win, ACS_BLOCK);
+					else
+						waddch(win, ' ');
+				}
+				
+				
+				/*for (int a=displayB; a<displayT; a+=64){
 					for (int b=0; b<64; b++){
 						if(mem[a + b] == 1)
 							mvwaddch(win, (a-displayB)/64, b, ACS_BLOCK);
 						else
 							mvwaddch(win, (a-displayB)/64, b, ' ');
 					}
-				}
+				}*/
 				wrefresh(win);
 				break;
 			case 0xe:	
