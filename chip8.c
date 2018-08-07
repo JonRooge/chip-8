@@ -449,12 +449,14 @@ int emulate(uint8_t * lrom){
 				}
 				//Draw memory to screen
 				
-				move(0,0);
+				wmove(win,0,0);
 				for(int loc = displayB; loc < displayT; loc++){
-					if(mem[loc] == 1)
-						waddch(win, ACS_BLOCK);
-					else
-						waddch(win, ' ');
+					for(int bit=0; bit < 8; bit++){
+						if(mem[loc] & (0x80 >> bit) == 1)
+							waddch(win, ACS_BLOCK);
+						else
+							waddch(win, ' ');
+					}
 				}
 				
 				
