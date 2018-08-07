@@ -457,7 +457,7 @@ int emulate(uint8_t * lrom){
 						else
 							waddch(win, ' ');
 						wrefresh(win);
-						delay(30);
+						delay(1);
 					}
 				}
 				
