@@ -456,6 +456,8 @@ int emulate(uint8_t * lrom){
 							waddch(win, ACS_BLOCK);
 						else
 							waddch(win, ' ');
+						wrefresh(win);
+						delay(100);
 					}
 				}
 				
@@ -540,7 +542,7 @@ int emulate(uint8_t * lrom){
 
 		//getchar();
 		reg->PC+=2; 											// NOTE: Each instruction is 2 bytes
-		delay(200);
+		delay(50);
 	}
 	return 0;
 }
