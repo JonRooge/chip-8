@@ -450,7 +450,7 @@ int emulate(uint8_t * lrom){
 				//Draw memory to screen
 				for (int a=displayB; a<displayT; a+=32){
 					for (int b=0; b<64; b++){
-						if(mem[(a*64) + b] == 1)
+						if(mem[displayB + ((a*64) + b)] == 1)
 							mvwaddch(win, (a-displayB)/32, b, ACS_BLOCK);
 						else
 							mvwaddch(win, (a-displayB)/32, b, ' ');
