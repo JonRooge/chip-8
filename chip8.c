@@ -528,7 +528,7 @@ int emulate(uint8_t * lrom){
 
 		//getchar();
 		reg->PC+=2; 											// NOTE: Each instruction is 2 bytes
-		//delay(200);
+		delay(1000);
 	}
 	return 0;
 }
