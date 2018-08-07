@@ -225,13 +225,14 @@ int decompile(uint8_t * lrom){
 WINDOW * startWin(){
 	initscr();	
 	noecho();
+	raw();
 	cbreak();
 	//curs_set(FALSE);
 	// 64x32 window size
 	//	printf("%d, %d, %d, %d\n", LINES, COLS, winX0, winY0);
-	//keypad(stdscr, TRUE);
+	keypad(stdscr, TRUE);
 	
-	int winW = 64,
+	int winW = 128, // the screen is squished when using ascii so i doubled the width
 	    winH = 32,
 	    winX0 = (LINES/2)-(winH/2),
 	    winY0 = (COLS/2)-(winW/2);
@@ -243,6 +244,7 @@ WINDOW * startWin(){
 				ACS_LLCORNER,
 				ACS_LRCORNER);
 	wtimeout(window,0);
+	keypad(window, TRUE);
 	//nodelay(TRUE)
 	return window;
 }
@@ -444,7 +446,7 @@ int emulate(uint8_t * lrom){
 							if(mem[displayB + (reg->V[nib2] / 8) + (reg->V[nib3] + y)*8] & (0x1 << (7-x)) == 1){
 								reg->V[0xf] = 1;
 							}
-							mem[displayB + (reg->V[nib2]) / 8) + (reg->V[nib3] + y)*8] ^= (0x1 << (7-x));
+							mem[displayB + (reg->V[nib2] / 8) + (reg->V[nib3] + y)*8] ^= (0x1 << (7-x));
 						}
 					}
 				}
@@ -453,11 +455,14 @@ int emulate(uint8_t * lrom){
 				wmove(win,0,0);
 				for(int loc = displayB; loc <= displayT; loc++){
 					for(int bit=0; bit < 8; bit++){
-						if(mem[loc] & (0x80 >> bit) == 1)
+						if(mem[loc] & (0x80 >> bit)){
 							waddch(win, ACS_BLOCK);
-						else
+							waddch(win, ACS_BLOCK);
+						}else{
+							waddch(win, ' ');
 							waddch(win, ' ');
 						//wrefresh(win);
+						}
 					}
 				}
 				
