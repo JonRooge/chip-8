@@ -441,20 +441,20 @@ int emulate(uint8_t * lrom){
 					pixel = mem[reg->I + y];
 					for (int x=0; x<8; x++){
 						if((pixel & (0x80 >> x)) != 0){
-							if(mem[(nib2 + x + ((nib3 + y) * 64))] == 1){
+							if(mem[displayB + (nib2 + x) + (nib3 + y)] == 1){
 								reg->V[0xf] = 1;
 							}
-							mem[nib2 + x + ((nib3 + y) * 64)] ^= 1;
+							mem[displayB + (nib2 + x) + (nib3 + y)] ^= 1;
 						}
 					}
 				}
-				//Draw memory to screen (This might be redundant)
-				for (int a=displayB; a<displayT; a+=8){
-					for (int b=0; b<8; b++){
-						if(mem[a+b] >= 1)
-							mvwaddch(win, a-displayB, b, ACS_BLOCK);
+				//Draw memory to screen
+				for (int a=displayB; a<displayT; a+=32){
+					for (int b=0; b<64; b++){
+						if(mem[(a*64) + b] == 1)
+							mvwaddch(win, (a-displayB)/32, b, ACS_BLOCK);
 						else
-							mvwaddch(win, a-displayB, b, ' ');
+							mvwaddch(win, (a-displayB)/32, b, ' ');
 					}
 				}
 				wrefresh(win);
