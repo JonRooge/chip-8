@@ -257,10 +257,10 @@ int emulate(uint8_t * lrom){
 		 stackB=0x0ea0,
 		 stackT=0x0eff,
 		 add,
-		 sub;
+		 sub,
+		 size;
 	
-	uint8_t	 size, 
-		 nib1,
+	uint8_t	 nib1,
 		 nib2,
 		 nib3,
 		 nib4,
@@ -314,7 +314,7 @@ int emulate(uint8_t * lrom){
 	}
 	
 	printf("STARTING PROGRAM:\n");
-	while(reg->PC < RAMSIZE && reg->PC > -1 && reg->PC <= 0x200 + size && wgetch(win) != ESC){
+	while(reg->PC < RAMSIZE && reg->PC > -1 && (reg->PC <= (0x200 + size)) && wgetch(win) != ESC){
 		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
 		
 		/* DEBUG */
@@ -341,7 +341,6 @@ int emulate(uint8_t * lrom){
 					reg->SP--;
 					reg->PC	= reg->PC | (mem[reg->SP] << 8);
 					reg->SP--;
-					reg->PC-=2; 			//  because at the end it inc by 2 everytime, so i need to balance it.
 				}
 				else if (byte == 0x00e0)	wclear(win);
 				else {
@@ -410,7 +409,7 @@ int emulate(uint8_t * lrom){
 						reg->V[0xf] = (sub > 0); 
 						break;
 					case 0xe:
-						reg->V[0xf] = (reg->V[nib2] >> 7 & 0x1);
+						reg->V[0xf] = ((reg->V[nib2] >> 7) & 0x1);
 						reg->V[nib2] <<= 1;
 						break;
 					default:
@@ -462,11 +461,11 @@ int emulate(uint8_t * lrom){
 			case 0xe:	
 				if (byte == 0x9e) {
 					key = wgetch(win);
-					if(key > -1 && key == reg->V[nib2]) 	reg->PC+=2;		
+					if(key != ERR && key == reg->V[nib2]) 	reg->PC+=2;		
 				}	
 				else if (byte == 0xa1){
 					key = wgetch(win);
-					if(key > -1 && key != reg->V[nib2]) 	reg->PC+=2;			
+					if(key != ERR && key != reg->V[nib2]) 	reg->PC+=2;			
 				}
 				break;
 			case 0xf:
@@ -486,9 +485,9 @@ int emulate(uint8_t * lrom){
 						reg->ST = reg->V[nib2];
 						break;
 					case 0x1e:
-						if(reg->I + reg->V[nib2] > 0xfff) {
+						if((reg->I + reg->V[nib2]) > 0xfff) {
 							cleanup();
-							return 1;;
+							return 1;
 						}								// NOTE: I is not allowed above 0x0fff so we error out of program.
 						reg->I += reg->V[nib2];
 						break;
@@ -502,9 +501,9 @@ int emulate(uint8_t * lrom){
 							}
 						break;
 					case 0x33:	
-						mem[reg->I] = (int)reg->V[nib2] / 100;
-						mem[reg->I+1] = ((int)reg->V[nib2] % 100) / 10;
-						mem[reg->I+2] = (((int)reg->V[nib2] & 100) % 10);
+						mem[reg->I] = (uint8_t)reg->V[nib2] / 100;
+						mem[reg->I+1] = ((uint8_t)reg->V[nib2] % 100) / 10;
+						mem[reg->I+2] = (((uint8_t)reg->V[nib2] & 100) % 10);
 						break;
 					case 0x55:
 						for(i=0; i<=nib2; i++){ 					// NOTE: OP is inclusive
