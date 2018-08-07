@@ -433,17 +433,18 @@ int emulate(uint8_t * lrom){
 				break;
 			case 0xd:
 
-				// Found online
+				// Found online (But it wasn't nearly correct. The solution below is 90% mine.)
 				// First write into memory
 				reg->V[0xf] = 0;
 				for (int y=0; y<nib4; y++){
 					pixel = mem[reg->I + y];
 					for (int x=0; x<8; x++){
 						if((pixel & (0x80 >> x)) != 0){
-							if(mem[displayB + (reg->V[nib2] + x) + (reg->V[nib3] + y)] == 1){
+							// the 9th byte is the start of row 2
+							if(mem[displayB + (reg->V[nib2]) + (reg->V[nib3] + y)*8] & (0x1 << (7-x)) == 1){
 								reg->V[0xf] = 1;
 							}
-							mem[displayB + (reg->V[nib2] + x) + (reg->V[nib3] + y)] ^= 1;
+							mem[displayB + (reg->V[nib2]) + (reg->V[nib3] + y)*8] ^= (0x1 << (7-x));
 						}
 					}
 				}
