@@ -440,11 +440,11 @@ int emulate(uint8_t * lrom){
 					pixel = mem[reg->I + y];
 					for (int x=0; x<8; x++){
 						if((pixel & (0x80 >> x)) != 0){
-							// the 9th byte is the start of row 2
-							if(mem[displayB + (reg->V[nib2]) + (reg->V[nib3] + y)*8] & (0x1 << (7-x)) == 1){
+							// the 9th byte is the start of row 2 // display is 8 bytes (64 bits) across
+							if(mem[displayB + (reg->V[nib2] / 8) + (reg->V[nib3] + y)*8] & (0x1 << (7-x)) == 1){
 								reg->V[0xf] = 1;
 							}
-							mem[displayB + (reg->V[nib2]) + (reg->V[nib3] + y)*8] ^= (0x1 << (7-x));
+							mem[displayB + (reg->V[nib2]) / 8) + (reg->V[nib3] + y)*8] ^= (0x1 << (7-x));
 						}
 					}
 				}
