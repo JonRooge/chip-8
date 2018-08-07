@@ -237,7 +237,7 @@ WINDOW * startWin(){
 	    winY0 = (COLS/2)-(winW/2);
 	
 	//WINDOW * box = newwin(winH+2, winW+2, winX0-2, winY0-2);
-	WINDOW * window = newwin(winH+2, winW+2, winX0-2, winY0-2);
+	WINDOW * window = newwin(winH, winW, winX0, winY0);
 	wborder(window,0,0,0,0,ACS_ULCORNER,
 				ACS_URCORNER,
 				ACS_LLCORNER,
@@ -448,12 +448,12 @@ int emulate(uint8_t * lrom){
 					}
 				}
 				//Draw memory to screen
-				for (int a=displayB; a<displayT; a+=32){
+				for (int a=displayB; a<displayT; a+=64){
 					for (int b=0; b<64; b++){
-						if(mem[displayB + (((a-displayB)*64) + b)] == 1)
-							mvwaddch(win, (a-displayB)/32, b, ACS_BLOCK);
+						if(mem[a + b] == 1)
+							mvwaddch(win, (a-displayB)/64, b, ACS_BLOCK);
 						else
-							mvwaddch(win, (a-displayB)/32, b, ' ');
+							mvwaddch(win, (a-displayB)/64, b, ' ');
 					}
 				}
 				wrefresh(win);
