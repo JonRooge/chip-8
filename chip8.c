@@ -250,7 +250,7 @@ WINDOW * startWin(){
 }
 
 int emulate(uint8_t * lrom){
-	uint8_t mem[RAMSIZE];
+	uint8_t mem[RAMSIZE] = {0};
 	uint16_t stack[16];
 	
 	uint16_t instr,
@@ -443,7 +443,7 @@ int emulate(uint8_t * lrom){
 					for (int x=0; x<8; x++){
 						if((pixel & (0x80 >> x)) != 0){
 							// the 9th byte is the start of row 2 // display is 8 bytes (64 bits) across
-							if(mem[displayB + (reg->V[nib2] / 8) + (reg->V[nib3] + y)*8] & (0x1 << (7-x)) == 1){
+							if(mem[displayB + (reg->V[nib2] / 8) + (reg->V[nib3] + y)*8] & (0x1 << (7-x))){
 								reg->V[0xf] = 1;
 							}
 							mem[displayB + (reg->V[nib2] / 8) + (reg->V[nib3] + y)*8] ^= (0x1 << (7-x));
@@ -456,8 +456,8 @@ int emulate(uint8_t * lrom){
 				for(int loc = displayB; loc <= displayT; loc++){
 					for(int bit=0; bit < 8; bit++){
 						if(mem[loc] & (0x80 >> bit)){
-							waddch(win, ACS_BLOCK);
-							waddch(win, ACS_BLOCK);
+							waddch(win, '[');
+							waddch(win, ']');
 						}else{
 							waddch(win, ' ');
 							waddch(win, ' ');
