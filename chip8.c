@@ -440,10 +440,10 @@ int emulate(uint8_t * lrom){
 					pixel = mem[reg->I + y];
 					for (int x=0; x<8; x++){
 						if((pixel & (0x80 >> x)) != 0){
-							if(mem[displayB + (nib2 + x) + (nib3 + y)] == 1){
+							if(mem[displayB + (reg->V[nib2] + x) + (reg->V[nib3] + y)] == 1){
 								reg->V[0xf] = 1;
 							}
-							mem[displayB + (nib2 + x) + (nib3 + y)] ^= 1;
+							mem[displayB + (reg->V[nib2] + x) + (reg->V[nib3] + y)] ^= 1;
 						}
 					}
 				}
