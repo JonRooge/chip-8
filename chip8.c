@@ -8,6 +8,8 @@
 //#include <SDL/SDL.h>
 
 #define RAMSIZE 4096
+#define WINDOW_W 128
+#define WINDOW_H 32
 #define ESC 27
 
 struct chip8_registers
@@ -232,8 +234,8 @@ WINDOW * startWin(){
 	//	printf("%d, %d, %d, %d\n", LINES, COLS, winX0, winY0);
 	keypad(stdscr, TRUE);
 	
-	int winW = 128, // the screen is squished when using ascii so i doubled the width
-	    winH = 32,
+	int winW = WINDOW_W, // the screen is squished when using ascii so i doubled the width
+	    winH = WINDOW_H,
 	    winX0 = (LINES/2)-(winH/2),
 	    winY0 = (COLS/2)-(winW/2);
 	
@@ -252,6 +254,8 @@ WINDOW * startWin(){
 int emulate(uint8_t * lrom){
 	uint8_t mem[RAMSIZE] = {0};
 	uint16_t stack[16];
+	int ands[8] = { 128, 64, 32, 16, 8, 4, 2, 1 };
+	uint8_t display[WINDOW_W/2][WINDOW_H] = {0};
 	
 	uint16_t instr,
 		 displayB=0x0f00,
@@ -270,7 +274,7 @@ int emulate(uint8_t * lrom){
 		 r,
 		 pixel;
 
-	int i;
+	int i, x_coord, y_coord;
 	int8_t key;
 
 	struct chip8_registers *reg= malloc(sizeof(struct chip8_registers*));
@@ -437,7 +441,7 @@ int emulate(uint8_t * lrom){
 
 				// Found online (But it wasn't nearly correct. The solution below is 90% mine.)
 				// First write into memory
-				reg->V[0xf] = 0;
+				/*reg->V[0xf] = 0;
 				for (int y=0; y<nib4; y++){
 					pixel = mem[reg->I + y];
 					for (int x=0; x<8; x++){
@@ -449,9 +453,61 @@ int emulate(uint8_t * lrom){
 							mem[displayB + (reg->V[nib2] / 8) + (reg->V[nib3] + y)*8] ^= (0x1 << (7-x));
 						}
 					}
-				}
+				}*/
 				//Draw memory to screen
 				
+				
+				// draws a sprite to the screen
+				// uses coordinates stored in VX and VY, with height given by N
+				x_coord = reg->V[nib2];
+				y_coord = reg->V[nib3];
+				
+				// because the sprite is represented by hexadecimal numbers
+				// bitwise operators are necessary to obtain each pixel
+
+				// set carry flag to 0
+				reg->V[0xf] = 0;
+				// drawing loop
+				for (int i = 0; i < nib4; i++) {
+					for (int j = 0; j < 8; j++) {
+						// allows sprite to wrap around screen
+						if (x_coord + j == WINDOW_W/2) {
+							x_coord = -j;
+						}
+						if (y_coord + i == WINDOW_H) {
+							y_coord = -i;
+						}
+
+						// set carry flag to 1 if a sprite changes from set to unset
+						if (display[x_coord + j][y_coord + i] == 1 &&
+							((mem[reg->I + i] & ands[j]) >> (8 - j - 1)) == 1) {
+							reg->V[0xf] = 1;
+						}
+
+						// bitwise operations decode each bit of sprite and XOR with the current pixel on screen
+						display[x_coord + j][y_coord + i] = display[x_coord + j][y_coord + i] ^ 
+							((mem[reg->I + i] & ands[j]) >> (8 - j - 1));
+					}
+					x_coord = reg->V[nib2];
+					y_coord = reg->V[nib3];
+				}
+				
+				wmove(win,0,0);
+				for(int x = 0; x < WINDOW_H; x++){
+					for(int y=0; y < WINDOW_W/2; y++){
+						if(display[y][x]){
+							waddch(win, '[');
+							waddch(win, ']');
+						}else{
+							waddch(win, ' ');
+							waddch(win, ' ');
+						//wrefresh(win);
+						}
+					}
+				}
+				
+				
+				/*
 				wmove(win,0,0);
 				for(int loc = displayB; loc <= displayT; loc++){
 					for(int bit=0; bit < 8; bit++){
@@ -464,7 +520,7 @@ int emulate(uint8_t * lrom){
 						//wrefresh(win);
 						}
 					}
-				}
+				}*/
 				
 				
 				/*for (int a=displayB; a<displayT; a+=64){
