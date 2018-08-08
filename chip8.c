@@ -369,9 +369,14 @@ int emulate(uint8_t * lrom){
 					reg->SP--;
 					reg->PC	= reg->PC | (mem[reg->SP] << 8);
 					reg->SP--;
-				}
-				else if (byte == 0x00e0)	wclear(win);
-				else {
+				}else if (byte == 0x00e0){
+					for (int y = 0; y < WINDOW_H; y++){
+						for (int x = 0; x < WINDOW_W/2; x++ ){
+							display[x][y] = 0;
+						}
+					}
+					//wclear(win);
+				}else {
 					reg->PC = instr & 0x0fff;
 					reg->PC-=2; 			//  because at the end it inc by 2 everytime, so i need to balance it.
 				}
