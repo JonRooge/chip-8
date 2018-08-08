@@ -11,6 +11,7 @@
 #define WINDOW_W 128
 #define WINDOW_H 32
 #define ESC 27
+#define SPRITE_ARR_LEN 96
 
 struct chip8_registers
 {
@@ -229,7 +230,7 @@ WINDOW * startWin(){
 	noecho();
 	raw();
 	cbreak();
-	//curs_set(FALSE);
+	curs_set(FALSE);
 	// 64x32 window size
 	//	printf("%d, %d, %d, %d\n", LINES, COLS, winX0, winY0);
 	keypad(stdscr, TRUE);
@@ -280,7 +281,7 @@ int emulate(uint8_t * lrom){
 
 	struct chip8_registers *reg= malloc(sizeof(struct chip8_registers*));
 	
-	int spArrLen = 96;
+	int spArrLen = SPRITE_ARR_LEN;
 	uint8_t sprite[] = {
 		0x0, 0xF0,0x90,0x90,0x90,0xF0,  //0
 		0x1, 0x20,0x60,0x20,0x20,0x70,  //1
@@ -336,7 +337,7 @@ int emulate(uint8_t * lrom){
 	memcpy(&mem[reg->PC], lrom, size * sizeof(uint8_t));
 
 	// NOTE: Load sprites
-	for (i=0; i<80; i++){
+	for (i=0; i<SPRITE_ARR_LEN; i++){
 		mem[i] = sprite[i];
 	}
 	
@@ -461,21 +462,7 @@ int emulate(uint8_t * lrom){
 			case 0xd:
 
 				// First write into memory
-				/*reg->V[0xf] = 0;
-				for (int y=0; y<nib4; y++){
-					pixel = mem[reg->I + y];
-					for (int x=0; x<8; x++){
-						if((pixel & (0x80 >> x)) != 0){
-							// the 9th byte is the start of row 2 // display is 8 bytes (64 bits) across
-							if(mem[displayB + (reg->V[nib2] / 8) + (reg->V[nib3] + y)*8] & (0x1 << (7-x))){
-								reg->V[0xf] = 1;
-							}
-							mem[displayB + (reg->V[nib2] / 8) + (reg->V[nib3] + y)*8] ^= (0x1 << (7-x));
-						}
-					}
-				}*/
-				//Draw memory to screen
-				
+				// FOUND ONLINE
 				
 				// draws a sprite to the screen
 				// uses coordinates stored in VX and VY, with height given by N
@@ -533,11 +520,13 @@ int emulate(uint8_t * lrom){
 				// using keymap algorithm found online
 				if (byte == 0x9e) {
 					keys = SDL_GetKeyState(NULL);
-					if(keys[keymap[reg->V[nib2]]]) 		reg->PC+=2;		
+					if(keys[keymap[reg->V[nib2]]]) 		
+						reg->PC+=2;		
 				}	
 				else if (byte == 0xa1){
 					keys = SDL_GetKeyState(NULL);
-					if(!keys[keymap[reg->V[nib2]]]) 	reg->PC+=2;			
+					if(!keys[keymap[reg->V[nib2]]]) 	
+						reg->PC+=2;			
 				}
 				break;
 			case 0xf:
@@ -602,7 +591,7 @@ int emulate(uint8_t * lrom){
 
 		//getchar();
 		reg->PC+=2; 											// NOTE: Each instruction is 2 bytes
-		delay(10);
+		delay(5);
 	}
 	return 0;
 }
