@@ -5,7 +5,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <ncurses.h>
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
 #define RAMSIZE 4096
 #define WINDOW_W 128
@@ -257,8 +257,7 @@ int emulate(uint8_t * lrom){
 	uint16_t stack[16];
 	int ands[8] = { 128, 64, 32, 16, 8, 4, 2, 1 };
 	uint8_t display[WINDOW_W/2][WINDOW_H] = {0};
-	
-	uint8_t * keys;
+	uint8_t key[16] = {0};
 
 	uint16_t instr,
 		 displayB=0x0f00,
@@ -325,6 +324,10 @@ int emulate(uint8_t * lrom){
 
 	// END OF DECL
 	// ------------------------------------------------
+	//
+	
+	//SDL_Init(SDL_INIT_EVERYTHING);
+
 	
 
 	WINDOW * win = startWin();	
@@ -343,6 +346,9 @@ int emulate(uint8_t * lrom){
 	
 	printf("STARTING PROGRAM:\n");
 	while(reg->PC < RAMSIZE && reg->PC > -1 && (reg->PC <= (0x200 + size)) && wgetch(win) != ESC){
+		
+		//SDL_Event e;
+		
 		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
 		
 		/* DEBUG */
@@ -524,13 +530,11 @@ int emulate(uint8_t * lrom){
 			case 0xe:	
 				// using keymap algorithm found online
 				if (byte == 0x9e) {
-					keys = SDL_GetKeyState(NULL);
-					if(keys[keymap[reg->V[nib2]]]) 		
+					if(key[reg->V[nib2]]) 		
 						reg->PC+=2;		
 				}	
 				else if (byte == 0xa1){
-					keys = SDL_GetKeyState(NULL);
-					if(!keys[keymap[reg->V[nib2]]]) 	
+					if(!key[reg->V[nib2]]) 	
 						reg->PC+=2;			
 				}
 				break;
@@ -540,11 +544,36 @@ int emulate(uint8_t * lrom){
 						reg->V[nib2] = reg->DT;
 						break;
 					case 0x0a:
-						keys = SDL_GetKeyState(NULL);
-                        			for(i = 0; i < 0x10; i++)
-                            				if(keys[keymap[i]]){
-                                				reg->V[nib2] = i;
-                            				}
+						
+top_of_switch: 
+						;
+						uint8_t ch = wgetch(win);
+						switch(ch){
+							case 49:
+								reg->V[nib2] = 1;
+								break;
+							case 50:
+								reg->V[nib2] = 2;
+								break;
+							case 51:
+								reg->V[nib2] = 3;
+								break;
+							default:
+								goto top_of_switch;
+						}
+
+						/* https://github.com/JamesGriffin/CHIP-8-Emulator/blob/master/src/main.cpp
+						while(SDL_PollEvent(&e)){
+							if(e.type == SDL_KEYDOWN){
+                        					for(i = 0; i < 0x10; i++){
+                            						if(keys[keymap[i]]){
+                                						reg->V[nib2] = i;
+                            						}
+								}
+								SDL_PumpEvents();
+							}
+
+						} */
 						break;
 					case 0x15:
 						reg->DT = reg->V[nib2];
