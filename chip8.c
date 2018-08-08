@@ -5,7 +5,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <ncurses.h>
-//#include <SDL/SDL.h>
+#include <SDL/SDL.h>
 
 #define RAMSIZE 4096
 #define WINDOW_W 128
@@ -257,6 +257,8 @@ int emulate(uint8_t * lrom){
 	int ands[8] = { 128, 64, 32, 16, 8, 4, 2, 1 };
 	uint8_t display[WINDOW_W/2][WINDOW_H] = {0};
 	
+	uint8_t * keys;
+
 	uint16_t instr,
 		 displayB=0x0f00,
 		 displayT=0x0fff,
@@ -275,7 +277,6 @@ int emulate(uint8_t * lrom){
 		 pixel;
 
 	int i, x_coord, y_coord;
-	int8_t key;
 
 	struct chip8_registers *reg= malloc(sizeof(struct chip8_registers*));
 	
@@ -297,6 +298,26 @@ int emulate(uint8_t * lrom){
 		0xd, 0xE0,0x90,0x90,0x90,0xE0,  //d
 		0xe, 0xF0,0x80,0xF0,0x80,0xF0,  //e
 		0xf, 0xF0,0x80,0xF0,0x80,0x80   //f
+	};
+
+	// found online
+	static int keymap[0x10] = {
+	    SDLK_0,
+	    SDLK_1,
+	    SDLK_2,
+	    SDLK_3,
+	    SDLK_4,
+	    SDLK_5,
+	    SDLK_6,
+	    SDLK_7,
+	    SDLK_8,
+	    SDLK_9,
+	    SDLK_a,
+	    SDLK_b,
+	    SDLK_c,
+	    SDLK_d,
+	    SDLK_e,
+	    SDLK_f
 	};
 
 	srand(time(NULL));
@@ -439,7 +460,6 @@ int emulate(uint8_t * lrom){
 				break;
 			case 0xd:
 
-				// Found online (But it wasn't nearly correct. The solution below is 90% mine.)
 				// First write into memory
 				/*reg->V[0xf] = 0;
 				for (int y=0; y<nib4; y++){
@@ -507,40 +527,17 @@ int emulate(uint8_t * lrom){
 				}
 				
 				
-				/*
-				wmove(win,0,0);
-				for(int loc = displayB; loc <= displayT; loc++){
-					for(int bit=0; bit < 8; bit++){
-						if(mem[loc] & (0x80 >> bit)){
-							waddch(win, '[');
-							waddch(win, ']');
-						}else{
-							waddch(win, ' ');
-							waddch(win, ' ');
-						//wrefresh(win);
-						}
-					}
-				}*/
-				
-				
-				/*for (int a=displayB; a<displayT; a+=64){
-					for (int b=0; b<64; b++){
-						if(mem[a + b] == 1)
-							mvwaddch(win, (a-displayB)/64, b, ACS_BLOCK);
-						else
-							mvwaddch(win, (a-displayB)/64, b, ' ');
-					}
-				}*/
 				wrefresh(win);
 				break;
 			case 0xe:	
+				// using keymap algorithm found online
 				if (byte == 0x9e) {
-					key = wgetch(win);
-					if(key != ERR && key == reg->V[nib2]) 	reg->PC+=2;		
+					keys = SDL_GetKeyState(NULL);
+					if(keys[keymap[reg->V[nib2]]]) 		reg->PC+=2;		
 				}	
 				else if (byte == 0xa1){
-					key = wgetch(win);
-					if(key != ERR && key != reg->V[nib2]) 	reg->PC+=2;			
+					keys = SDL_GetKeyState(NULL);
+					if(!keys[keymap[reg->V[nib2]]]) 	reg->PC+=2;			
 				}
 				break;
 			case 0xf:
@@ -549,9 +546,11 @@ int emulate(uint8_t * lrom){
 						reg->V[nib2] = reg->DT;
 						break;
 					case 0x0a:
-						wtimeout(win, -1);	
-						reg->V[nib2] = (uint8_t) wgetch(win);
-						wtimeout(win, 0);
+						keys = SDL_GetKeyState(NULL);
+                        			for(i = 0; i < 0x10; i++)
+                            				if(keys[keymap[i]]){
+                                				reg->V[nib2] = i;
+                            				}
 						break;
 					case 0x15:
 						reg->DT = reg->V[nib2];
