@@ -229,6 +229,68 @@ int decompile(uint8_t * lrom){
 	return 0;
 }
 
+
+uint8_t getKeyPress(int press){
+	uint8_t retVal;
+	switch(press){
+		case 48:
+			retVal = 0;
+			break;
+		case 49:
+			retVal = 1;
+			break;
+		case 50:
+			retVal = 2;
+			break;
+		case 51:
+			retVal = 3;
+			break;
+		case 52:
+			retVal = 4;
+			break;
+		case 53:
+			retVal = 5;
+			break;
+		case 54:
+			retVal = 6;
+			break;
+		case 55:
+			retVal = 7;
+			break;
+		case 56:
+			retVal = 8;
+			break;
+		case 57:
+			retVal = 9;
+			break;
+		case 97:
+			retVal = 0xa;
+			break;
+		case 98:
+			retVal = 0xb;
+			break;
+		case 99:
+			retVal = 0xc;
+			break;
+		case 100:
+			retVal = 0xd;
+			break;
+		case 101:
+			retVal = 0xe;
+			break;
+		case 102:
+			retVal = 0xf;
+			break;
+		case 27:
+			retVal = 99;
+		default:
+			retVal = 199;
+	
+	}
+	return retVal;
+}
+
+
 WINDOW * startWin(){
 	initscr();	
 	noecho();
@@ -275,10 +337,10 @@ int emulate(uint8_t * lrom){
 		 nib4,
 		 byte,
 		 r,
-		 pixel;
+		 pixel,
+		 press;
 
-	int i, x_coord, y_coord,
-	    currently_forking; // this is a mutex
+	int i, x_coord, y_coord;
 	
 	clock_t startTime;
 
@@ -334,6 +396,18 @@ int emulate(uint8_t * lrom){
 		nib4= instr & 0x000f;
 		byte= instr & 0x00ff;
 		
+		press = getKeyPress(wgetch(win));
+		switch(press){
+			case 99:
+				return 0;
+			case 199:
+				break;
+			default:
+				for (int i = 0; i < 16; i++) key[i] = 0;
+				key[press] = 1;
+		}
+
+
 		switch(nib1){
 
 			// NOTE: http://devernay.free.fr/hacks/chip8/C8TECH10.HTM for instructions
@@ -465,14 +539,13 @@ int emulate(uint8_t * lrom){
 						}
 
 						// set carry flag to 1 if a sprite changes from set to unset
-						if (display[x_coord + j][y_coord + i] == 1 &&
-							((mem[reg->I + i] & ands[j]) >> (8 - j - 1)) == 1) {
+						if ((display[x_coord + j][y_coord + i] == 1) &&
+							(((mem[reg->I + i] & ands[j]) >> (8 - j - 1)) == 1)) {
 							reg->V[0xf] = 1;
 						}
 
 						// bitwise operations decode each bit of sprite and XOR with the current pixel on screen
-						display[x_coord + j][y_coord + i] = display[x_coord + j][y_coord + i] ^ 
-							((mem[reg->I + i] & ands[j]) >> (8 - j - 1));
+						display[x_coord + j][y_coord + i] ^= ((mem[reg->I + i] & ands[j]) >> (8 - j - 1));
 					}
 					x_coord = reg->V[nib2];
 					y_coord = reg->V[nib3];
@@ -510,64 +583,19 @@ int emulate(uint8_t * lrom){
 						reg->V[nib2] = reg->DT;
 						break;
 					case 0x0a:
-					top_of_switch: 		// goto here. Yes I know they are scary. But its just one.
 						;
-						uint8_t ch = wgetch(win);
-						switch(ch){
-							case 48:
-								reg->V[nib2] = 0;
-								break;
-							case 49:
-								reg->V[nib2] = 1;
-								break;
-							case 50:
-								reg->V[nib2] = 2;
-								break;
-							case 51:
-								reg->V[nib2] = 3;
-								break;
-							case 52:
-								reg->V[nib2] = 4;
-								break;
-							case 53:
-								reg->V[nib2] = 5;
-								break;
-							case 54:
-								reg->V[nib2] = 6;
-								break;
-							case 55:
-								reg->V[nib2] = 7;
-								break;
-							case 56:
-								reg->V[nib2] = 8;
-								break;
-							case 57:
-								reg->V[nib2] = 9;
-								break;
-							case 97:
-								reg->V[nib2] = 0xa;
-								break;
-							case 98:
-								reg->V[nib2] = 0xb;
-								break;
-							case 99:
-								reg->V[nib2] = 0xc;
-								break;
-							case 100:
-								reg->V[nib2] = 0xd;
-								break;
-							case 101:
-								reg->V[nib2] = 0xe;
-								break;
-							case 102:
-								reg->V[nib2] = 0xf;
-								break;
-							case 27:
+						uint8_t keyPress = 0; 
+						while (keyPress == 0){
+							press = wgetch(win);
+							keyPress = getKeyPress(press);
+							if (keyPress == 99){
 								return 0;
-							default:
-								goto top_of_switch;
+							} else if (keyPress != 199){
+								reg->V[nib2] = keyPress;
+							} else {
+								keyPress = 0;
+							}
 						}
-
 						break;
 					case 0x15:
 						reg->DT = reg->V[nib2];
