@@ -340,7 +340,7 @@ int emulate(uint8_t * lrom){
 		 pixel,
 		 press;
 
-	int i, x_coord, y_coord;
+	int i, x_coord, y_coord, tc;
 	
 	clock_t startTime;
 
@@ -385,7 +385,7 @@ int emulate(uint8_t * lrom){
 	
 	startTime = clock();
 	printf("STARTING PROGRAM:\n");
-	while(reg->PC < RAMSIZE && reg->PC > -1 && (reg->PC <= (0x200 + size)) && wgetch(win) != ESC){
+	while(reg->PC < RAMSIZE && reg->PC > -1 && (reg->PC <= (0x200 + size))){
 		
 		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
 		
@@ -396,19 +396,22 @@ int emulate(uint8_t * lrom){
 		nib4= instr & 0x000f;
 		byte= instr & 0x00ff;
 		
-		press = getKeyPress(wgetch(win)); // Polls too fast to get recognized
-		switch(press){
-			case 99:
-				return 0;
-			case 199:
-				break;
-			default:
-				wmove(win,0,0);
-				for (int i = 0; i < 16; i++) key[i] = 0;
-				wprintw(win, "setting %x to 1 ", press);
-				key[press] = 1;
+		int new_key = wgetch(win);
+		if(new_key != ERR){
+		
+			press = getKeyPress(new_key);
+			switch(press){
+				case 99:
+					return 0;
+				case 199:
+					break; 		
+				default:
+					wmove(win,0,0);
+					wprintw(win, "setting key[%x] to 1 ", press);
+					key[press] = 1;
+			}
+			press = 199;
 		}
-
 
 		switch(nib1){
 
@@ -571,12 +574,16 @@ int emulate(uint8_t * lrom){
 				break;
 			case 0xe:	
 				if (byte == 0x9e) {
-					if(key[reg->V[nib2]]) 		
-						reg->PC+=2;		
+					if(key[reg->V[nib2]]) {		
+						reg->PC+=2;
+						for (int i = 0; i < 16; i++) key[i] = 0;
+					}		
 				}	
 				else if (byte == 0xa1){
-					if(!key[reg->V[nib2]]) 	
-						reg->PC+=2;			
+					if(!key[reg->V[nib2]]) 	{
+						reg->PC+=2;	
+						//for (int i = 0; i < 16; i++) key[i] = 0;
+					}		
 				}
 				break;
 			case 0xf:
@@ -653,13 +660,13 @@ int emulate(uint8_t * lrom){
         		if(reg->DT > 0)	reg->DT--;
 			if(reg->ST > 0) {
 				reg->ST--;
-				wmove(win, 0, -5);
+				wmove(win, 0, 0);
 				wprintw(win, "BEEP");
 			}
 			startTime = clock();
     		}
 		
-		delay(1);	
+		//delay(1);	
 		
 		
 		
@@ -727,6 +734,7 @@ int main(int argc, char ** argv){
 					printf("\nEmulator error...\n");
 				}
 				cleanup();
+				fflush(stdin);
 				break;
 			case 3:
 				break;
