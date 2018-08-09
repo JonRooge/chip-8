@@ -1,5 +1,7 @@
 #include <stdint.h>
+#include <unistd.h>
 #include <time.h>
+#include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
@@ -11,6 +13,8 @@
 #define WINDOW_H 32
 #define ESC 27
 #define SPRITE_ARR_LEN 96
+#define CLOCK_HZ 60
+#define CLOCK_MATH(int) ((1.0/CLOCK_HZ) * 1000)
 
 struct chip8_registers
 {
@@ -24,6 +28,7 @@ struct chip8_registers
 	uint16_t PC,
 		 SP;
 };
+
 
 int cleanup(){
 	endwin();
@@ -272,7 +277,10 @@ int emulate(uint8_t * lrom){
 		 r,
 		 pixel;
 
-	int i, x_coord, y_coord;
+	int i, x_coord, y_coord,
+	    currently_forking; // this is a mutex
+	
+	clock_t startTime;
 
 	struct chip8_registers *reg= malloc(sizeof(struct chip8_registers*));
 	
@@ -296,32 +304,8 @@ int emulate(uint8_t * lrom){
 		0xf, 0xF0,0x80,0xF0,0x80,0x80   //f
 	};
 
-	// found online
-	/*static int keymap[0x10] = {
-	    SDLK_0,
-	    SDLK_1,
-	    SDLK_2,
-	    SDLK_3,
-	    SDLK_4,
-	    SDLK_5,
-	    SDLK_6,
-	    SDLK_7,
-	    SDLK_8,
-	    SDLK_9,
-	    SDLK_a,
-	    SDLK_b,
-	    SDLK_c,
-	    SDLK_d,
-	    SDLK_e,
-	    SDLK_f
-	};*/
 
 	srand(time(NULL));
-
-	// END OF DECL
-	// ------------------------------------------------
-	//
-	
 
 	WINDOW * win = startWin();	
 
@@ -340,6 +324,7 @@ int emulate(uint8_t * lrom){
 	printf("STARTING PROGRAM:\n");
 	while(reg->PC < RAMSIZE && reg->PC > -1 && (reg->PC <= (0x200 + size)) && wgetch(win) != ESC){
 		
+		startTime = clock();
 		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
 		
 		// NOTE: Bytes 1-4 retrieved and stored for easier printing and comparison	
@@ -632,9 +617,59 @@ int emulate(uint8_t * lrom){
 		}
 		
 
-		//getchar();
 		reg->PC+=2; 											// NOTE: Each instruction is 2 bytes
-		delay(5);
+		
+		if ((clock() - startTime) >= CLOCK_MATH()) {
+        		if(reg->DT > 0)	reg->DT--;
+			if(reg->ST > 0) {
+				reg->ST--;
+				wmove(win, 0, -5);
+				wprintw(win, "BEEP");
+			}
+    		}
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		// Tried to solve timers with children. Became complicated.
+		//
+		/*
+		int time = reg->DT;
+		
+		int status;
+		if(time > 0){
+			int pid;
+			if (!currently_forking) pid = fork();
+			else pid = 1;
+			if(pid == 0){
+				// Child's only purpose is to manage the timers
+				
+				while(time != 0) {
+					delay(1000/60);
+					time -= 1;
+				}
+				exit(EXIT_SUCCESS);
+			}else if (pid > 0){
+				currently_forking = 1;
+				(void)waitpid(-1, &status, WNOHANG);
+				if (WIFEXITED(status)){
+					currently_forking = 0;
+					reg->DT = 0;
+				}
+
+				// Cannot handle case when a chip8 programmer might want to look at the current value of DT to check if it is at a certian point.
+			}else{
+				
+			}
+
+		}*/
 	}
 	return 0;
 }
