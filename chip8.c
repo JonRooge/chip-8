@@ -5,7 +5,6 @@
 #include <malloc.h>
 #include <string.h>
 #include <ncurses.h>
-#include <SDL2/SDL.h>
 
 #define RAMSIZE 4096
 #define WINDOW_W 128
@@ -232,7 +231,6 @@ WINDOW * startWin(){
 	cbreak();
 	curs_set(FALSE);
 	// 64x32 window size
-	//	printf("%d, %d, %d, %d\n", LINES, COLS, winX0, winY0);
 	keypad(stdscr, TRUE);
 	
 	int winW = WINDOW_W, // the screen is squished when using ascii so i doubled the width
@@ -240,7 +238,6 @@ WINDOW * startWin(){
 	    winX0 = (LINES/2)-(winH/2),
 	    winY0 = (COLS/2)-(winW/2);
 	
-	//WINDOW * box = newwin(winH+2, winW+2, winX0-2, winY0-2);
 	WINDOW * window = newwin(winH, winW, winX0, winY0);
 	wborder(window,0,0,0,0,ACS_ULCORNER,
 				ACS_URCORNER,
@@ -248,7 +245,6 @@ WINDOW * startWin(){
 				ACS_LRCORNER);
 	wtimeout(window,0);
 	keypad(window, TRUE);
-	//nodelay(TRUE)
 	return window;
 }
 
@@ -301,7 +297,7 @@ int emulate(uint8_t * lrom){
 	};
 
 	// found online
-	static int keymap[0x10] = {
+	/*static int keymap[0x10] = {
 	    SDLK_0,
 	    SDLK_1,
 	    SDLK_2,
@@ -318,16 +314,13 @@ int emulate(uint8_t * lrom){
 	    SDLK_d,
 	    SDLK_e,
 	    SDLK_f
-	};
+	};*/
 
 	srand(time(NULL));
 
 	// END OF DECL
 	// ------------------------------------------------
 	//
-	
-	//SDL_Init(SDL_INIT_EVERYTHING);
-
 	
 
 	WINDOW * win = startWin();	
@@ -347,17 +340,8 @@ int emulate(uint8_t * lrom){
 	printf("STARTING PROGRAM:\n");
 	while(reg->PC < RAMSIZE && reg->PC > -1 && (reg->PC <= (0x200 + size)) && wgetch(win) != ESC){
 		
-		//SDL_Event e;
-		
 		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
 		
-		/* DEBUG */
-		
-		//printf("Instruction: %x\nPC: %x\nSP: %x\n", instr, reg->PC, reg->SP);
-		//getchar();
-		
-		/* END DEBUG */
-
 		// NOTE: Bytes 1-4 retrieved and stored for easier printing and comparison	
 		nib1= instr >> 12;
 		nib2= (instr & 0x0f00) >> 8;
@@ -381,7 +365,6 @@ int emulate(uint8_t * lrom){
 							display[x][y] = 0;
 						}
 					}
-					//wclear(win);
 				}else {
 					reg->PC = instr & 0x0fff;
 					reg->PC-=2; 			//  because at the end it inc by 2 everytime, so i need to balance it.
@@ -519,7 +502,6 @@ int emulate(uint8_t * lrom){
 						}else{
 							waddch(win, ' ');
 							waddch(win, ' ');
-						//wrefresh(win);
 						}
 					}
 				}
@@ -528,7 +510,6 @@ int emulate(uint8_t * lrom){
 				wrefresh(win);
 				break;
 			case 0xe:	
-				// using keymap algorithm found online
 				if (byte == 0x9e) {
 					if(key[reg->V[nib2]]) 		
 						reg->PC+=2;		
@@ -544,11 +525,13 @@ int emulate(uint8_t * lrom){
 						reg->V[nib2] = reg->DT;
 						break;
 					case 0x0a:
-						
-top_of_switch: 
+					top_of_switch: 		// goto here. Yes I know they are scary. But its just one.
 						;
 						uint8_t ch = wgetch(win);
 						switch(ch){
+							case 48:
+								reg->V[nib2] = 0;
+								break;
 							case 49:
 								reg->V[nib2] = 1;
 								break;
@@ -558,22 +541,48 @@ top_of_switch:
 							case 51:
 								reg->V[nib2] = 3;
 								break;
+							case 52:
+								reg->V[nib2] = 4;
+								break;
+							case 53:
+								reg->V[nib2] = 5;
+								break;
+							case 54:
+								reg->V[nib2] = 6;
+								break;
+							case 55:
+								reg->V[nib2] = 7;
+								break;
+							case 56:
+								reg->V[nib2] = 8;
+								break;
+							case 57:
+								reg->V[nib2] = 9;
+								break;
+							case 97:
+								reg->V[nib2] = 0xa;
+								break;
+							case 98:
+								reg->V[nib2] = 0xb;
+								break;
+							case 99:
+								reg->V[nib2] = 0xc;
+								break;
+							case 100:
+								reg->V[nib2] = 0xd;
+								break;
+							case 101:
+								reg->V[nib2] = 0xe;
+								break;
+							case 102:
+								reg->V[nib2] = 0xf;
+								break;
+							case 27:
+								return 0;
 							default:
 								goto top_of_switch;
 						}
 
-						/* https://github.com/JamesGriffin/CHIP-8-Emulator/blob/master/src/main.cpp
-						while(SDL_PollEvent(&e)){
-							if(e.type == SDL_KEYDOWN){
-                        					for(i = 0; i < 0x10; i++){
-                            						if(keys[keymap[i]]){
-                                						reg->V[nib2] = i;
-                            						}
-								}
-								SDL_PumpEvents();
-							}
-
-						} */
 						break;
 					case 0x15:
 						reg->DT = reg->V[nib2];
@@ -600,7 +609,7 @@ top_of_switch:
 					case 0x33:	
 						mem[reg->I] = (uint8_t)reg->V[nib2] / 100;
 						mem[reg->I+1] = ((uint8_t)reg->V[nib2] % 100) / 10;
-						mem[reg->I+2] = (((uint8_t)reg->V[nib2] & 100) % 10);
+						mem[reg->I+2] = (((uint8_t)reg->V[nib2] % 100) % 10);
 						break;
 					case 0x55:
 						for(i=0; i<=nib2; i++){ 					// NOTE: OP is inclusive
