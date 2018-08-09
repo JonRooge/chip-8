@@ -321,10 +321,10 @@ int emulate(uint8_t * lrom){
 		mem[i] = sprite[i];
 	}
 	
+	startTime = clock();
 	printf("STARTING PROGRAM:\n");
 	while(reg->PC < RAMSIZE && reg->PC > -1 && (reg->PC <= (0x200 + size)) && wgetch(win) != ESC){
 		
-		startTime = clock();
 		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
 		
 		// NOTE: Bytes 1-4 retrieved and stored for easier printing and comparison	
@@ -626,9 +626,10 @@ int emulate(uint8_t * lrom){
 				wmove(win, 0, -5);
 				wprintw(win, "BEEP");
 			}
+			startTime = clock();
     		}
 		
-		
+		delay(1);	
 		
 		
 		
