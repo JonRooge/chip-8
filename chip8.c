@@ -396,14 +396,16 @@ int emulate(uint8_t * lrom){
 		nib4= instr & 0x000f;
 		byte= instr & 0x00ff;
 		
-		press = getKeyPress(wgetch(win));
+		press = getKeyPress(wgetch(win)); // Polls too fast to get recognized
 		switch(press){
 			case 99:
 				return 0;
 			case 199:
 				break;
 			default:
+				wmove(win,0,0);
 				for (int i = 0; i < 16; i++) key[i] = 0;
+				wprintw(win, "setting %x to 1 ", press);
 				key[press] = 1;
 		}
 
