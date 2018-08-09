@@ -16,5 +16,5 @@ Everything is in one file due to the way I think through things. I may separate 
   * Basic unformatted dump of hex instructions
 * 1 - Decompiles loaded rom
 * 2 - Run program (ESC to quit safely)
-  * Keys are mapped to their coresponding key 1->1, 2->2 ... F->F
+  * Keys are mapped to their corresponding key 1->1, 2->2 ... F->F
 * 3 - Quit menu
