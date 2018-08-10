@@ -17,6 +17,8 @@ Requires ncurses for display and keyboard input.
 * 1 - Decompiles loaded rom
   * Spits out basic interpretation all at once
 * 2 - Run program
-  * ESC exits safely, restores cmd line, and returns you back to the menu
+  * ESC exits safely after short pause, restores cmd line, and returns you back to the menu
   * Keys are mapped to their corresponding key 1->1, 2->2 ... F->F
 * 3 - Quit menu
+
+Warning: menu can only handle a single character at a time. It breaks if you do anything unexpected. 
