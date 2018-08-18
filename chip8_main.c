@@ -40,7 +40,8 @@ uint8_t * loadFile(int argc, char ** argv, int sw, int * fsize){
 int main(int argc, char ** argv){
 	uint8_t * lrom; 											//NOTE: stands for 'loaded rom'
 	int ch, 
-	    fsize = 0;
+	    fsize = 0,
+	    err = 0;
 	
 	if (argc < 2) {
 		printf("Must include 1 argument that is the ROM location.\n");
@@ -65,10 +66,14 @@ int main(int argc, char ** argv){
 				decompile(lrom, fsize);
 				break;
 			case 2:
-				if(emulate(lrom, fsize)){
-					printf("\nEmulator error...\n");
-				}
+				err = emulate(lrom, fsize);
 				cleanup();
+				if(err == 1){
+					printf("Emulator error.\n");
+				}else if (err == 2){
+					printf("Screen initialization failed. Quitting program. Try increasing the size of the terminal window.\n");
+					return 1;
+				}
 				fflush(stdin);
 				break;
 			case 3:

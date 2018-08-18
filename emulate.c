@@ -27,7 +27,11 @@ int cleanup(){
 }
 
 WINDOW * startWin(){
-	initscr();	
+	WINDOW * window;
+	if (!initscr()) {
+		window = NULL;
+		return window;
+	}	
 	noecho();
 	raw();
 	cbreak();
@@ -40,7 +44,7 @@ WINDOW * startWin(){
 	    winX0 = (LINES/2)-(winH/2),
 	    winY0 = (COLS/2)-(winW/2);
 	
-	WINDOW * window = newwin(winH, winW, winX0, winY0);
+	window = newwin(winH, winW, winX0, winY0);
 	wborder(window,0,0,0,0,ACS_ULCORNER,
 				ACS_URCORNER,
 				ACS_LLCORNER,
@@ -172,8 +176,10 @@ int emulate(uint8_t * lrom, int fsize){
 
 	srand(time(NULL));
 
-	WINDOW * win = startWin();	
-
+	WINDOW * win = startWin();
+	if (!win) {
+		return 2;	
+	}
 
 	reg->PC = 0x200;
 	reg->SP = stackB;
