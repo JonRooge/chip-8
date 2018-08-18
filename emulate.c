@@ -18,10 +18,6 @@ struct chip8_registers
 		 SP;
 };
 
-void delay(int number_of_cycles){
-    for (int i = 0; i < number_of_cycles*10000; i++)
-        ;
-}
 
 
 int cleanup(){
@@ -146,8 +142,14 @@ int emulate(uint8_t * lrom, int fsize){
 		 stack[16];
 
 	clock_t startTime;
-
+	
 	struct chip8_registers *reg= malloc(sizeof(struct chip8_registers*));
+	//uint8_t emptyReg[16] = {0};
+	//memcpy(reg->V, emptyReg, sizeof(emptyReg));
+	//*reg = {0}
+	memset(reg, 0, sizeof(*reg));
+	
+	
 	
 	uint8_t sprite[] = {
 		0x0, 0xF0,0x90,0x90,0x90,0xF0,  //0
@@ -227,10 +229,10 @@ int emulate(uint8_t * lrom, int fsize){
 							display[x][y] = 0;
 						}
 					}
-				}else {
+				} /*else {
 					reg->PC = instr & 0x0fff;
 					reg->PC-=2; 			//  because at the end it inc by 2 everytime, so i need to balance it.
-				}
+				}*/
 				break;
 			case 0x1:
 				reg->PC = instr & 0x0fff;
@@ -467,8 +469,8 @@ int emulate(uint8_t * lrom, int fsize){
 			startTime = clock();
     		}
 		
-		delay(250);	
 		
+		usleep(5000);
 		
 		
 		// Tried to solve timers with children. Became complicated.
