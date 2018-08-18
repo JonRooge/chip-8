@@ -1,19 +1,17 @@
 #include "chip8.h"
 
-int decompile(uint8_t * lrom){
-	int size, 
-	    ip=0, 
+int decompile(uint8_t * lrom, int fsize){
+	int ip=0, 
 	    startsWithZ=0;
 	uint16_t instr = 0x0,
 		 firstN = 0x0,
-		 instrCnt = 0x0;
+		 instrCnt = 0x200;
 	
 	uint8_t	 nib1,
 		 nib2,
 		 nib3,
 		 nib4;
-       	size = malloc_usable_size(lrom);
-	while(ip < size){
+	while(ip < fsize){
 		instr = lrom[ip] << 8 | lrom[ip+1];
 	
 		// Bytes 1-4 retrieved and stored for easier printing and comparison	

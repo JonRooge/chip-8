@@ -116,7 +116,7 @@ uint8_t getKeyPress(int press){
 }
 
 
-int emulate(uint8_t * lrom){
+int emulate(uint8_t * lrom, int fsize){
 	uint8_t mem[RAMSIZE] = {0},
 			key[16] = {0},
 			display[WINDOW_W/2][WINDOW_H] = {0},
@@ -143,7 +143,6 @@ int emulate(uint8_t * lrom){
 		 stackT=0x0eff,
 		 add,
 		 sub,
-		 size,
 		 stack[16];
 
 	clock_t startTime;
@@ -177,8 +176,7 @@ int emulate(uint8_t * lrom){
 	reg->PC = 0x200;
 	reg->SP = stackB;
 
-    size = malloc_usable_size(lrom);
-	memcpy(&mem[reg->PC], lrom, size * sizeof(uint8_t));
+	memcpy(&mem[reg->PC], lrom, fsize * sizeof(uint8_t));
 
 	// NOTE: Load sprites
 	for (i=0; i<SPRITE_ARR_LEN; i++){
@@ -187,7 +185,7 @@ int emulate(uint8_t * lrom){
 	
 	startTime = clock();
 	printf("STARTING PROGRAM:\n");
-	while(reg->PC < RAMSIZE && reg->PC > -1 && (reg->PC <= (0x200 + size))){
+	while(reg->PC < RAMSIZE && reg->PC > -1 && (reg->PC <= (0x200 + fsize))){
 		
 		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
 		

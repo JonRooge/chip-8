@@ -1,9 +1,8 @@
 
 #include "chip8.h"
 
-uint8_t * loadFile(int argc, char ** argv, int sw){
-	int bytep = 0,
-	    fsize = 0;
+uint8_t * loadFile(int argc, char ** argv, int sw, int * fsize){
+	int bytep = 0;
 	uint8_t * membuffer;
 	uint8_t error = 1;
 	
@@ -14,22 +13,22 @@ uint8_t * loadFile(int argc, char ** argv, int sw){
 		return membuffer;
 	}
 	fseek(fp, 0, SEEK_END);
-	fsize = ftell(fp);
-	membuffer = (uint8_t*) malloc(sizeof(uint8_t) * (fsize));
+	*fsize = ftell(fp);
+	membuffer = (uint8_t*) malloc(sizeof(uint8_t) * (*fsize));
 
 	fseek(fp, 0, SEEK_SET);
-	if (fread(membuffer, 1, fsize, fp) < fsize) {
+	if (fread(membuffer, 1, *fsize, fp) < *fsize) {
 		printf("ERROR reading file");
 	}
 	
 	fclose(fp);
 	
-	if(argc == 1 || fsize <= 1){
+	if(argc == 1 || *fsize <= 1){
 		printf("Failed to load file.");
 	}
 	printf("ROM LOADED\n");
 	if(sw){
-		while(bytep != fsize){
+		while(bytep != *fsize){
 			printf("%x ", membuffer[bytep]);
 			bytep++;
 		}
@@ -40,13 +39,14 @@ uint8_t * loadFile(int argc, char ** argv, int sw){
 
 int main(int argc, char ** argv){
 	uint8_t * lrom; 											//NOTE: stands for 'loaded rom'
-	int ch;
+	int ch, 
+	    fsize = 0;
 	
 	if (argc < 2) {
 		printf("Must include 1 argument that is the ROM location.\n");
 		return 1;
 	}
-	lrom = loadFile(argc, argv, 0);
+	lrom = loadFile(argc, argv, 0, &fsize);
 
 	if(*lrom == 1){
 		printf("Something went wrong trying to open '%s'.\n", argv[1]);
@@ -59,13 +59,13 @@ int main(int argc, char ** argv){
 		scanf(" %d", &ch);
 		switch(ch){
 			case 0:
-				loadFile(argc, argv, 1);
+				loadFile(argc, argv, 1, &fsize);
 				break;
 			case 1:
-				decompile(lrom);
+				decompile(lrom, fsize);
 				break;
 			case 2:
-				if(emulate(lrom)){
+				if(emulate(lrom, fsize)){
 					printf("\nEmulator error...\n");
 				}
 				cleanup();

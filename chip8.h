@@ -20,6 +20,6 @@
 
 int cleanup();
 
-int emulate(uint8_t * lrom);
+int emulate(uint8_t * lrom, int fsize);
 
-int decompile(uint8_t * lrom);
+int decompile(uint8_t * lrom, int fsize);
