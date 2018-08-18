@@ -5,9 +5,14 @@ uint8_t * loadFile(int argc, char ** argv, int sw){
 	int bytep = 0,
 	    fsize = 0;
 	uint8_t * membuffer;
+	uint8_t error = 1;
 	
 	FILE * fp = fopen(argv[1], "r");
-
+	
+	if (!fp) { 
+		membuffer = &error;
+		return membuffer;
+	}
 	fseek(fp, 0, SEEK_END);
 	fsize = ftell(fp);
 	membuffer = (uint8_t*) malloc(sizeof(uint8_t) * (fsize));
@@ -36,8 +41,17 @@ uint8_t * loadFile(int argc, char ** argv, int sw){
 int main(int argc, char ** argv){
 	uint8_t * lrom; 											//NOTE: stands for 'loaded rom'
 	int ch;
-
+	
+	if (argc < 2) {
+		printf("Must include 1 argument that is the ROM location.\n");
+		return 1;
+	}
 	lrom = loadFile(argc, argv, 0);
+
+	if(*lrom == 1){
+		printf("Something went wrong trying to open '%s'.\n", argv[1]);
+		return 1;
+	}
 
 	printf("Welcome to the chip8 emulator.\n");
 	while(ch != 3){
