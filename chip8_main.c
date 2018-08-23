@@ -82,6 +82,8 @@ int main(int argc, char ** argv){
 					return 1;
 				}else if (err == 3){
 					printf("Unknown instruction. ROM may be corrupted.\n");
+				}else{
+					printf("Exited with code %d. Code 0 is normal.\n", err);
 				}
 				fflush(stdin);
 				break;

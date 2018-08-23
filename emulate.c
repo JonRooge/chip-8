@@ -188,7 +188,8 @@ int emulate(uint8_t * lrom, int fsize){
 	reg->PC = 0x200;
 	reg->SP = stackB;
 
-	memcpy(&mem[reg->PC], lrom, fsize * sizeof(uint8_t));
+	void * test = memcpy(&mem[reg->PC], lrom, fsize * sizeof(uint8_t));
+	if(test == NULL) return 4;
 
 	// NOTE: Load sprites
 	for (i=0; i<SPRITE_ARR_LEN; i++){
@@ -370,7 +371,7 @@ int emulate(uint8_t * lrom, int fsize){
 					y_coord = reg->V[nib3];
 				}
 				
-				wmove(win,0,0);
+				if(wmove(win,0,0) == ERR) return 5;
 				for(int x = 0; x < WINDOW_H; x++){
 					for(int y=0; y < WINDOW_W/2; y++){
 						if(display[y][x]){
