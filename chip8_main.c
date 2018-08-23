@@ -42,6 +42,7 @@ int main(int argc, char ** argv){
 	int ch, 
 	    fsize = 0,
 	    err = 0;
+	char line[3];
 	
 	if (argc < 2) {
 		printf("Must include 1 argument that is the ROM location.\n");
@@ -55,17 +56,23 @@ int main(int argc, char ** argv){
 	}
 
 	printf("Welcome to the chip8 emulator.\n");
-	while(ch != 3){
+	while(ch != '3'){
 		printf("Main menu:\n 0 ... Print out raw rom data\n 1 ... Decompile rom\n 2 ... Run program (Quit with ESC)\n 3 ... Quit\n>>>");
-		scanf(" %d", &ch);
+		fflush(stdin);
+		if(fgets(line, 3, stdin) == NULL){
+			printf("Error reading input.");
+			continue;
+		}
+		if(!strchr(line, '\n')) while (fgetc(stdin) != '\n'); //discards until newline. Credit-> https://stackoverflow.com/questions/30388101/how-to-remove-extra-characters-input-from-fgets-in-c
+		ch = line[0];
 		switch(ch){
-			case 0:
+			case '0': 
 				loadFile(argc, argv, 1, &fsize);
 				break;
-			case 1:
+			case '1':
 				decompile(lrom, fsize);
 				break;
-			case 2:
+			case '2':
 				err = emulate(lrom, fsize);
 				cleanup();
 				if(err == 1){
@@ -73,10 +80,12 @@ int main(int argc, char ** argv){
 				}else if (err == 2){
 					printf("Screen initialization failed. Quitting program. Try increasing the size of the terminal window.\n");
 					return 1;
+				}else if (err == 3){
+					printf("Unknown instruction. ROM may be corrupted.\n");
 				}
 				fflush(stdin);
 				break;
-			case 3:
+			case '3':
 				break;
 			default:
 				printf("\nUnknown option...\n\n");
