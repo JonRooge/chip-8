@@ -19,6 +19,6 @@ Requires ncurses for display and keyboard input.
 * 2 - Run program
   * ESC exits safely after short pause, restores cmd line, and returns you back to the menu
   * Keys are mapped to their corresponding key 1->1, 2->2 ... F->F
+  * Terminal window should be larger than 128x32 (each pixel is two characters wide '[]')
 * 3 - Quit menu
-
-Warning: menu can only handle a single character at a time. It breaks if you do anything unexpected. 
+  * Exits with code 0 if everthing was ok.
