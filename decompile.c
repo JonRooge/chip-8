@@ -20,7 +20,7 @@ int decompile(uint8_t * lrom, int fsize){
 		nib3= (instr & 0x00f0) >> 4,
 		nib4= instr & 0x000f;
 
-		printf("%#5x  %x%x %x%x    ", instrCnt++, nib1, nib2, nib3, nib4);
+		printf("+%#5x  %x%x %x%x    ", instrCnt++, nib1, nib2, nib3, nib4);
 		
 		switch(nib1){
 			// http://devernay.free.fr/hacks/chip8/C8TECH10.HTM for instructions

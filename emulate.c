@@ -22,7 +22,7 @@ struct chip8_registers
 
 int cleanup(){
 	endwin();
-	//free();
+	//free(reg);
 	return 0;
 }
 
@@ -145,12 +145,16 @@ int emulate(uint8_t * lrom, int fsize){
 		 sub,
 		 stack[16];
 
-	clock_t startTime;
+	struct timespec * tp = malloc(sizeof(struct timespec*));
 	
 	struct chip8_registers *reg= malloc(sizeof(struct chip8_registers*));
 	//uint8_t emptyReg[16] = {0};
 	//memcpy(reg->V, emptyReg, sizeof(emptyReg));
 	//*reg = {0}
+	
+	int test1 = sizeof(reg);
+	int test2 = sizeof(*reg);
+	
 	memset(reg, 0, sizeof(*reg));
 	
 	
@@ -191,7 +195,12 @@ int emulate(uint8_t * lrom, int fsize){
 		mem[i] = sprite[i];
 	}
 	
-	startTime = clock();
+	time_t startSec;
+	long startNan;
+	clock_gettime(CLOCK_REALTIME, tp);
+	startSec = tp->tv_sec;
+	startNan = tp->tv_nsec;
+	
 	printf("STARTING PROGRAM:\n");
 	while(reg->PC < RAMSIZE && reg->PC > -1 && (reg->PC <= (0x200 + fsize))){
 		
@@ -305,8 +314,7 @@ int emulate(uint8_t * lrom, int fsize){
 						reg->V[nib2] <<= 1;
 						break;
 					default:
-						printf("UNKNOWN CMD: %x\n", instr);
-						break;
+						return 3;
 				}
 				break;
 			case 0x9:
@@ -393,6 +401,8 @@ int emulate(uint8_t * lrom, int fsize){
 						key[reg->V[nib2]] = 0;
 						
 					}		
+				}else{
+					return 3;
 				}
 				break;
 			case 0xf:
@@ -453,32 +463,33 @@ int emulate(uint8_t * lrom, int fsize){
 						}
 						break;
 					default:
-						printf("UNKNOWN CMD: %x\n", instr);
-						break;
+						return 3;
 				}
 				break;
 			default:
-				printf("UNKNOWN CMD: %x\n", instr);
-				break;
+				return 3;
 		}
 		
 
 		reg->PC+=2; 											// NOTE: Each instruction is 2 bytes
 		
-		if ((clock() - startTime) >= CLOCK_MATH()) {
+		clock_gettime(CLOCK_REALTIME, tp);
+		if (((tp->tv_sec - startSec) + (tp->tv_nsec - startNan)/1E9) >= CLOCK_MATH()) {
         		if(reg->DT > 0)	reg->DT--;
 			if(reg->ST > 0) {
 				reg->ST--;
 				wmove(win, 0, 0);
 				wprintw(win, "BEEP");
 			}
-			startTime = clock();
-    		}
+			clock_gettime(CLOCK_REALTIME, tp);
+    			startSec = tp->tv_sec;
+			startNan = tp->tv_nsec;
+		}
 		
 		
 		usleep(5000);
 		
-		
+			
 		// Tried to solve timers with children. Became complicated.
 		//
 		/*

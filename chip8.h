@@ -15,7 +15,8 @@
 #define ESC 27
 #define SPRITE_ARR_LEN 96
 #define CLOCK_HZ 60
-#define CLOCK_MATH(int) ((1.0/CLOCK_HZ) * 1000)
+#define MOD 2		// This is here to make the hz more accurate
+#define CLOCK_MATH(int) ((1.0/CLOCK_HZ) * MOD)
 
 
 int cleanup();
