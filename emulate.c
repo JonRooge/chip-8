@@ -346,9 +346,7 @@ int emulate(uint8_t * lrom, int fsize){
 				//int8_t signy = reg->V[nib3];
 				x_coord = reg->V[nib2];
 				y_coord = reg->V[nib3];
-				if(x_coord < 0){
-					int ohno = 1;		
-				}
+
 				// because the sprite is represented by hexadecimal numbers
 				// bitwise operators are necessary to obtain each pixel
 
@@ -356,10 +354,10 @@ int emulate(uint8_t * lrom, int fsize){
 				reg->V[0xf] = 0;
 				// drawing loop
 				for (int i = 0; i < nib4; i++) {
-					y_coord = (y_coord + i) % WINDOW_H;
+					//y_coord = (y_coord + i) % WINDOW_H;
 					for (int j = 0; j < 8; j++) {
 						// allows sprite to wrap around screen
-						x_coord = (x_coord + j) % (WINDOW_W/2);
+						//x_coord = (x_coord + j) % (WINDOW_W/2);
 						/*if (x_coord + j >= WINDOW_W/2 && ((x_coord + j) < (WINDOW_W/2 + 64))) {
 							x_coord = -j;
 							reg->V[nib2] = -j;
@@ -378,13 +376,13 @@ int emulate(uint8_t * lrom, int fsize){
 						}*/
 
 						// set carry flag to 1 if a sprite changes from set to unset
-						if ((display[x_coord][y_coord] == 1) &&
+						if ((display[(x_coord + j) % (WINDOW_W/2)][(y_coord + i) % WINDOW_H] == 1) &&
 							(((mem[reg->I + i] & ands[j]) >> (8 - j - 1)) == 1)) {
 							reg->V[0xf] = 1;
 						}
 
 						// bitwise operations decode each bit of sprite and XOR with the current pixel on screen
-						display[x_coord][y_coord] ^= ((mem[reg->I + i] & ands[j]) >> (8 - j - 1));
+						display[(x_coord + j) % (WINDOW_W/2)][(y_coord + i) % WINDOW_H] ^= ((mem[reg->I + i] & ands[j]) >> (8 - j - 1));
 					}
 					x_coord = reg->V[nib2];
 					y_coord = reg->V[nib3];
