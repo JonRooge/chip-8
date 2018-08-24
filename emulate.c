@@ -204,7 +204,7 @@ int emulate(uint8_t * lrom, int fsize){
 	
 	printf("STARTING PROGRAM:\n");
 	while(reg->PC < RAMSIZE && reg->PC > -1 && (reg->PC <= (0x200 + fsize))){
-		
+
 		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
 		
 		// NOTE: Bytes 1-4 retrieved and stored for easier printing and comparison	
@@ -274,9 +274,10 @@ int emulate(uint8_t * lrom, int fsize){
 			case 0x6:
 				reg->V[nib2] = byte;
 				break;
-			case 0x7:
+			case 0x7: {
 				reg->V[nib2] += byte;
 				break;
+			}
 			case 0x8:
 				switch(nib4){
 					case 0x0:
@@ -332,16 +333,22 @@ int emulate(uint8_t * lrom, int fsize){
 				r = rand() % 0xff;
 				reg->V[nib2] = r & byte;
 				break;
-			case 0xd:
+			case 0xd: {
 
 				// First write into memory
 				// FOUND ONLINE
 				
 				// draws a sprite to the screen
 				// uses coordinates stored in VX and VY, with height given by N
+				// 
+				// Converting to signed
+				//int8_t signx = reg->V[nib2];
+				//int8_t signy = reg->V[nib3];
 				x_coord = reg->V[nib2];
 				y_coord = reg->V[nib3];
-				
+				if(x_coord < 0){
+					int ohno = 1;		
+				}
 				// because the sprite is represented by hexadecimal numbers
 				// bitwise operators are necessary to obtain each pixel
 
@@ -349,23 +356,35 @@ int emulate(uint8_t * lrom, int fsize){
 				reg->V[0xf] = 0;
 				// drawing loop
 				for (int i = 0; i < nib4; i++) {
+					y_coord = (y_coord + i) % WINDOW_H;
 					for (int j = 0; j < 8; j++) {
 						// allows sprite to wrap around screen
-						if (x_coord + j == WINDOW_W/2) {
+						x_coord = (x_coord + j) % (WINDOW_W/2);
+						/*if (x_coord + j >= WINDOW_W/2 && ((x_coord + j) < (WINDOW_W/2 + 64))) {
 							x_coord = -j;
+							reg->V[nib2] = -j;
 						}
-						if (y_coord + i == WINDOW_H) {
+						if (x_coord + j < 0 || ((x_coord + j) >= (WINDOW_W/2 + 64))) {
+							x_coord = WINDOW_W/2;
+							reg->V[nib2] = WINDOW_W/2;
+						}
+						if (y_coord + i >= WINDOW_H && x_coord + i < WINDOW_H + 64) {
 							y_coord = -i;
+							reg->V[nib3] = -i;
 						}
+						if (y_coord + i < 0) {
+							y_coord = WINDOW_H;
+							reg->V[nib3] = WINDOW_W/2;
+						}*/
 
 						// set carry flag to 1 if a sprite changes from set to unset
-						if ((display[x_coord + j][y_coord + i] == 1) &&
+						if ((display[x_coord][y_coord] == 1) &&
 							(((mem[reg->I + i] & ands[j]) >> (8 - j - 1)) == 1)) {
 							reg->V[0xf] = 1;
 						}
 
 						// bitwise operations decode each bit of sprite and XOR with the current pixel on screen
-						display[x_coord + j][y_coord + i] ^= ((mem[reg->I + i] & ands[j]) >> (8 - j - 1));
+						display[x_coord][y_coord] ^= ((mem[reg->I + i] & ands[j]) >> (8 - j - 1));
 					}
 					x_coord = reg->V[nib2];
 					y_coord = reg->V[nib3];
@@ -387,6 +406,7 @@ int emulate(uint8_t * lrom, int fsize){
 				
 				wrefresh(win);
 				break;
+			}
 			case 0xe:	
 				
 				if (byte == 0x9e) {
@@ -434,7 +454,6 @@ int emulate(uint8_t * lrom, int fsize){
 						break;
 					case 0x1e:
 						if((reg->I + reg->V[nib2]) > 0xfff) {
-							cleanup();
 							return 1;
 						}								// NOTE: I is not allowed above 0x0fff so we error out of program.
 						reg->I += reg->V[nib2];
@@ -486,8 +505,7 @@ int emulate(uint8_t * lrom, int fsize){
     			startSec = tp->tv_sec;
 			startNan = tp->tv_nsec;
 		}
-		
-		
+
 		usleep(5000);
 		
 			

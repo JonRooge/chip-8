@@ -18,20 +18,20 @@ struct chip8_registers
 		 SP;
 };
 
-void delay(int number_of_cycles){
-    for (int i = 0; i < number_of_cycles*10000; i++)
-        ;
-}
 
 
 int cleanup(){
 	endwin();
-	//free();
+	//free(reg);
 	return 0;
 }
 
 WINDOW * startWin(){
-	initscr();	
+	WINDOW * window;
+	if (!initscr()) {
+		window = NULL;
+		return window;
+	}	
 	noecho();
 	raw();
 	cbreak();
@@ -44,11 +44,12 @@ WINDOW * startWin(){
 	    winX0 = (LINES/2)-(winH/2),
 	    winY0 = (COLS/2)-(winW/2);
 	
-	WINDOW * window = newwin(winH, winW, winX0, winY0);
-	wborder(window,0,0,0,0,ACS_ULCORNER,
+	window = newwin(winH, winW, winX0, winY0);
+	/*wborder(window,0,0,0,0,ACS_ULCORNER,
 				ACS_URCORNER,
 				ACS_LLCORNER,
 				ACS_LRCORNER);
+	*/
 	wtimeout(window,0);
 	keypad(window, TRUE);
 	return window;
@@ -116,7 +117,7 @@ uint8_t getKeyPress(int press){
 }
 
 
-int emulate(uint8_t * lrom){
+int emulate(uint8_t * lrom, int fsize){
 	uint8_t mem[RAMSIZE] = {0},
 			key[16] = {0},
 			display[WINDOW_W/2][WINDOW_H] = {0},
@@ -143,12 +144,21 @@ int emulate(uint8_t * lrom){
 		 stackT=0x0eff,
 		 add,
 		 sub,
-		 size,
 		 stack[16];
 
-	clock_t startTime;
-
+	struct timespec * tp = malloc(sizeof(struct timespec*));
+	
 	struct chip8_registers *reg= malloc(sizeof(struct chip8_registers*));
+	//uint8_t emptyReg[16] = {0};
+	//memcpy(reg->V, emptyReg, sizeof(emptyReg));
+	//*reg = {0}
+	
+	int test1 = sizeof(reg);
+	int test2 = sizeof(*reg);
+	
+	memset(reg, 0, sizeof(*reg));
+	
+	
 	
 	uint8_t sprite[] = {
 		0x0, 0xF0,0x90,0x90,0x90,0xF0,  //0
@@ -171,35 +181,30 @@ int emulate(uint8_t * lrom){
 
 	srand(time(NULL));
 
-	WINDOW * win = startWin();	
-
+	WINDOW * win = startWin();
+	if (!win) {
+		return 2;	
+	}
 
 	reg->PC = 0x200;
 	reg->SP = stackB;
 
-    size = malloc_usable_size(lrom);
-	memcpy(&mem[reg->PC], lrom, size * sizeof(uint8_t));
+	void * test = memcpy(&mem[reg->PC], lrom, fsize * sizeof(uint8_t));
+	if(test == NULL) return 4;
 
 	// NOTE: Load sprites
 	for (i=0; i<SPRITE_ARR_LEN; i++){
 		mem[i] = sprite[i];
 	}
 	
-	startTime = clock();
+	time_t startSec;
+	long startNan;
+	clock_gettime(CLOCK_REALTIME, tp);
+	startSec = tp->tv_sec;
+	startNan = tp->tv_nsec;
+	
 	printf("STARTING PROGRAM:\n");
-	wmove(win,0,0);
-	/*for(int x = 0; x < WINDOW_H; x++){
-		for(int y=0; y < WINDOW_W/2; y++){
-			if(display[y][x]){
-				waddch(win, '[');
-				waddch(win, ']');
-			}else{
-				waddch(win, ' ');
-				waddch(win, ' ');
-			}
-		}
-	}*/
-	while(reg->PC < RAMSIZE && reg->PC > -1 && (reg->PC <= (0x200 + size))){
+	while(reg->PC < RAMSIZE && reg->PC > -1 && (reg->PC <= (0x200 + fsize))){
 		
 		instr = (mem[reg->PC]) << 8 | mem[reg->PC + 1];
 		
@@ -241,10 +246,10 @@ int emulate(uint8_t * lrom){
 							display[x][y] = 0;
 						}
 					}
-				}else {
+				} /*else {
 					reg->PC = instr & 0x0fff;
 					reg->PC-=2; 			//  because at the end it inc by 2 everytime, so i need to balance it.
-				}
+				}*/
 				break;
 			case 0x1:
 				reg->PC = instr & 0x0fff;
@@ -311,8 +316,7 @@ int emulate(uint8_t * lrom){
 						reg->V[nib2] <<= 1;
 						break;
 					default:
-						printf("UNKNOWN CMD: %x\n", instr);
-						break;
+						return 3;
 				}
 				break;
 			case 0x9:
@@ -337,6 +341,7 @@ int emulate(uint8_t * lrom){
 				// draws a sprite to the screen
 				// uses coordinates stored in VX and VY, with height given by N
 				x_coord = reg->V[nib2];
+				x_coord = reg->V[nib2];
 				y_coord = reg->V[nib3];
 				
 				// because the sprite is represented by hexadecimal numbers
@@ -349,10 +354,10 @@ int emulate(uint8_t * lrom){
 					for (int j = 0; j < 8; j++) {
 						// allows sprite to wrap around screen
 						if (x_coord + j == WINDOW_W/2) {
-							x_coord = -j;
+							x_coord = 0;
 						}
 						if (y_coord + i == WINDOW_H) {
-							y_coord = -i;
+							y_coord = 0;
 						}
 
 						// set carry flag to 1 if a sprite changes from set to unset
@@ -374,8 +379,8 @@ int emulate(uint8_t * lrom){
 					x_coord = reg->V[nib2];
 					y_coord = reg->V[nib3];
 				}
-			/*	
-				wmove(win,0,0);
+				/*
+				if(wmove(win,0,0) == ERR) return 5;
 				for(int x = 0; x < WINDOW_H; x++){
 					for(int y=0; y < WINDOW_W/2; y++){
 						if(display[y][x]){
@@ -387,7 +392,7 @@ int emulate(uint8_t * lrom){
 						}
 					}
 				}
-			*/	
+				*/
 				
 				wrefresh(win);
 				break;
@@ -406,6 +411,8 @@ int emulate(uint8_t * lrom){
 						key[reg->V[nib2]] = 0;
 						
 					}		
+				}else{
+					return 3;
 				}
 				break;
 			case 0xf:
@@ -466,32 +473,34 @@ int emulate(uint8_t * lrom){
 						}
 						break;
 					default:
-						printf("UNKNOWN CMD: %x\n", instr);
-						break;
+						return 3;
 				}
 				break;
 			default:
-				printf("UNKNOWN CMD: %x\n", instr);
-				break;
+				return 3;
 		}
 		
 
 		reg->PC+=2; 											// NOTE: Each instruction is 2 bytes
 		
-		if ((clock() - startTime) >= CLOCK_MATH()) {
+		clock_gettime(CLOCK_REALTIME, tp);
+		if (((tp->tv_sec - startSec) + (tp->tv_nsec - startNan)/1E9) >= CLOCK_MATH()) {
         		if(reg->DT > 0)	reg->DT--;
 			if(reg->ST > 0) {
 				reg->ST--;
 				wmove(win, 0, 0);
 				wprintw(win, "BEEP");
+				wmove(win, 0, 0);
 			}
-			startTime = clock();
-    		}
+			clock_gettime(CLOCK_REALTIME, tp);
+    			startSec = tp->tv_sec;
+			startNan = tp->tv_nsec;
+		}
 		
-		delay(250);	
 		
+		usleep(5000);
 		
-		
+			
 		// Tried to solve timers with children. Became complicated.
 		//
 		/*
