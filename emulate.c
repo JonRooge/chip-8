@@ -357,24 +357,6 @@ int emulate(uint8_t * lrom, int fsize){
 					//y_coord = (y_coord + i) % WINDOW_H;
 					for (int j = 0; j < 8; j++) {
 						// allows sprite to wrap around screen
-						//x_coord = (x_coord + j) % (WINDOW_W/2);
-						/*if (x_coord + j >= WINDOW_W/2 && ((x_coord + j) < (WINDOW_W/2 + 64))) {
-							x_coord = -j;
-							reg->V[nib2] = -j;
-						}
-						if (x_coord + j < 0 || ((x_coord + j) >= (WINDOW_W/2 + 64))) {
-							x_coord = WINDOW_W/2;
-							reg->V[nib2] = WINDOW_W/2;
-						}
-						if (y_coord + i >= WINDOW_H && x_coord + i < WINDOW_H + 64) {
-							y_coord = -i;
-							reg->V[nib3] = -i;
-						}
-						if (y_coord + i < 0) {
-							y_coord = WINDOW_H;
-							reg->V[nib3] = WINDOW_W/2;
-						}*/
-
 						// set carry flag to 1 if a sprite changes from set to unset
 						if ((display[(x_coord + j) % (WINDOW_W/2)][(y_coord + i) % WINDOW_H] == 1) &&
 							(((mem[reg->I + i] & ands[j]) >> (8 - j - 1)) == 1)) {
@@ -500,11 +482,11 @@ int emulate(uint8_t * lrom, int fsize){
 				wprintw(win, "BEEP");
 			}
 			clock_gettime(CLOCK_REALTIME, tp);
-    			startSec = tp->tv_sec;
+    		startSec = tp->tv_sec;
 			startNan = tp->tv_nsec;
 		}
 
-		usleep(5000);
+		usleep(2500);
 		
 			
 		// Tried to solve timers with children. Became complicated.
