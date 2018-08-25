@@ -371,9 +371,9 @@ int emulate(uint8_t * lrom, int fsize){
 				}
 				
 				if(wmove(win,0,0) == ERR) return 5;
-				for(int x = 0; x < WINDOW_H; x++){
-					for(int y=0; y < WINDOW_W/2; y++){
-						if(display[y][x]){
+				for(int y = 0; y < WINDOW_H; y++){
+					for(int x=0; x < WINDOW_W/2; x++){
+						if(display[x][y]){
 							waddch(win, '[');
 							waddch(win, ']');
 						}else{
