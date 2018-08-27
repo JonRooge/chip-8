@@ -294,22 +294,24 @@ int emulate(uint8_t * lrom, int fsize){
 						break;
 					case 0x4:
 						add = reg->V[nib2] + reg->V[nib3];
-						reg->V[nib2] = (uint8_t) add;
+						reg->V[nib2] = add & 0xff;
 						reg->V[0xf] = (add > 0xff); 
 						break;
 					case 0x5:
+						reg->V[0xf] = reg->V[nib2] > reg->V[nib3]; 
 						sub = reg->V[nib2] - reg->V[nib3];
-						reg->V[nib2] = (uint8_t) sub;
-						reg->V[0xf] = (sub > 0); 
+						reg->V[nib2] = sub & 0xff;
+						
 						break;
 					case 0x6:
 						reg->V[0xf] = reg->V[nib2] & 0x1;
 						reg->V[nib2] >>= 1;
 						break;
 					case 0x7:
+						reg->V[0xf] = reg->V[nib3] > reg->V[nib2]; 
 						sub = reg->V[nib3] - reg->V[nib2];
-						reg->V[nib2] = (uint8_t) sub;
-						reg->V[0xf] = (sub > 0); 
+						reg->V[nib2] = sub & 0xff;
+						
 						break;
 					case 0xe:
 						reg->V[0xf] = ((reg->V[nib2] >> 7) & 0x1);
@@ -358,13 +360,13 @@ int emulate(uint8_t * lrom, int fsize){
 					for (int j = 0; j < 8; j++) {
 						// allows sprite to wrap around screen
 						// set carry flag to 1 if a sprite changes from set to unset
-						if ((display[(x_coord + j) % (WINDOW_W/2)][(y_coord + i) % WINDOW_H] == 1) &&
+						if ((display[(x_coord + j) % (WINDOW_W/2)][(y_coord + i) % (WINDOW_H)] == 1) &&
 							(((mem[reg->I + i] & ands[j]) >> (8 - j - 1)) == 1)) {
 							reg->V[0xf] = 1;
 						}
 
 						// bitwise operations decode each bit of sprite and XOR with the current pixel on screen
-						display[(x_coord + j) % (WINDOW_W/2)][(y_coord + i) % WINDOW_H] ^= ((mem[reg->I + i] & ands[j]) >> (8 - j - 1));
+						display[(x_coord + j) % (WINDOW_W/2)][(y_coord + i) % (WINDOW_H)] ^= ((mem[reg->I + i] & ands[j]) >> (8 - j - 1));
 					}
 					x_coord = reg->V[nib2];
 					y_coord = reg->V[nib3];

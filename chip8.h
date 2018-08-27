@@ -11,7 +11,7 @@
 
 #define RAMSIZE 4096
 #define WINDOW_W 128
-#define WINDOW_H 33
+#define WINDOW_H 33 // 1 extra for games that don't work well with vertical wrapping
 #define ESC 27
 #define SPRITE_ARR_LEN 96
 #define CLOCK_HZ 60
