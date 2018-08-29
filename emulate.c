@@ -116,7 +116,7 @@ uint8_t getKeyPress(int press){
 }
 
 
-int emulate(uint8_t * lrom, int fsize){
+int emulate(uint8_t * lrom, int fsize, int wrap){
 	uint8_t mem[RAMSIZE] = {0},
 			key[16] = {0},
 			display[WINDOW_W/2][WINDOW_H] = {0},
@@ -134,7 +134,8 @@ int emulate(uint8_t * lrom, int fsize){
 		x_coord,
 		y_coord,
 		tc,
-		spArrLen = SPRITE_ARR_LEN;
+		spArrLen = SPRITE_ARR_LEN,
+		vert;
 
 	uint16_t instr,
 		 displayB=0x0f00,
@@ -360,16 +361,25 @@ int emulate(uint8_t * lrom, int fsize){
 					for (int j = 0; j < 8; j++) {
 						// allows sprite to wrap around screen
 						// set carry flag to 1 if a sprite changes from set to unset
-						if ((display[(x_coord + j) % (WINDOW_W/2)][(y_coord + i) % (WINDOW_H)] == 1) &&
+						if (wrap){
+							vert = (y_coord + i) % (WINDOW_H);
+						} else {
+							vert = (y_coord + i);
+							if (vert >= WINDOW_H){
+								break;
+							}
+						}
+						//
+						if ((display[(x_coord + j) % (WINDOW_W/2)][vert] == 1) &&
 							(((mem[reg->I + i] & ands[j]) >> (8 - j - 1)) == 1)) {
 							reg->V[0xf] = 1;
 						}
 
 						// bitwise operations decode each bit of sprite and XOR with the current pixel on screen
-						display[(x_coord + j) % (WINDOW_W/2)][(y_coord + i) % (WINDOW_H)] ^= ((mem[reg->I + i] & ands[j]) >> (8 - j - 1));
+						display[(x_coord + j) % (WINDOW_W/2)][vert] ^= ((mem[reg->I + i] & ands[j]) >> (8 - j - 1));
 					}
-					x_coord = reg->V[nib2];
-					y_coord = reg->V[nib3];
+					//x_coord = reg->V[nib2];
+					//y_coord = reg->V[nib3];
 				}
 				
 				if(wmove(win,0,0) == ERR) return 5;

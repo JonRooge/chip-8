@@ -11,7 +11,7 @@
 
 #define RAMSIZE 4096
 #define WINDOW_W 128
-#define WINDOW_H 33 // 1 extra for games that don't work well with vertical wrapping
+#define WINDOW_H 32 
 #define ESC 27
 #define SPRITE_ARR_LEN 96
 #define CLOCK_HZ 60
@@ -21,6 +21,6 @@
 
 int cleanup();
 
-int emulate(uint8_t * lrom, int fsize);
+int emulate(uint8_t * lrom, int fsize, int wrap);
 
 int decompile(uint8_t * lrom, int fsize);
