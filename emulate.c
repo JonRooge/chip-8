@@ -147,15 +147,22 @@ int emulate(uint8_t * lrom, int fsize, int wrap){
 		 stack[16];
 
 	struct timespec * tp = malloc(sizeof(struct timespec*));
+	if (tp == NULL){
+		return 6;
+	}
 	
 	struct chip8_registers *reg= malloc(sizeof(struct chip8_registers*));
+	if (reg == NULL){
+		return 6;
+	}
 	//uint8_t emptyReg[16] = {0};
 	//memcpy(reg->V, emptyReg, sizeof(emptyReg));
 	//*reg = {0}
 	
-	int test1 = sizeof(reg);
-	int test2 = sizeof(*reg);
+	//int test1 = sizeof(reg);
+	//int test2 = sizeof(*reg);
 	
+	// Instead of calloc (which initializes the alloc to 0), I do this.
 	memset(reg, 0, sizeof(*reg));
 	
 	
@@ -534,5 +541,10 @@ int emulate(uint8_t * lrom, int fsize, int wrap){
 
 		}*/
 	}
+	
+	// Clean up
+	free(tp);
+	free(reg);
+	
 	return 0;
 }

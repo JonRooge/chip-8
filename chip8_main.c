@@ -15,6 +15,11 @@ uint8_t * loadFile(int argc, char ** argv, int sw, int * fsize){
 	fseek(fp, 0, SEEK_END);
 	*fsize = ftell(fp);
 	membuffer = (uint8_t*) malloc(sizeof(uint8_t) * (*fsize));
+	if (membuffer == NULL){
+		error = 6;
+		membuffer = &error;
+		return membuffer;
+	}
 
 	fseek(fp, 0, SEEK_SET);
 	if (fread(membuffer, 1, *fsize, fp) < *fsize) {
@@ -50,7 +55,7 @@ int main(int argc, char ** argv){
 	}
 	lrom = loadFile(argc, argv, 0, &fsize);
 
-	if(*lrom == 1){
+	if(*lrom == 1 || lrom == NULL){
 		printf("Something went wrong trying to open '%s'.\n", argv[1]);
 		return 1;
 	}
@@ -67,7 +72,10 @@ int main(int argc, char ** argv){
 		ch = line[0];
 		switch(ch){
 			case '1': 
-				loadFile(argc, argv, 1, &fsize);
+				err = *loadFile(argc, argv, 1, &fsize);
+				if (err == 6){
+					printf("Failed to initialize memory segment.\n");
+				}
 				break;
 			case '2':
 				decompile(lrom, fsize);
@@ -82,6 +90,8 @@ int main(int argc, char ** argv){
 					return 1;
 				}else if (err == 3){
 					printf("Unknown instruction. ROM may be corrupted.\n");
+				}else if (err == 6){
+					printf("Failed to initialize memory segment.\n");
 				}else{
 					printf("Exited with code %d. Code 0 is normal.\n", err);
 				}
@@ -97,6 +107,8 @@ int main(int argc, char ** argv){
 					return 1;
 				}else if (err == 3){
 					printf("Unknown instruction. ROM may be corrupted.\n");
+				}else if (err == 6){
+					printf("Failed to initialize memory segment.\n");
 				}else{
 					printf("Exited with code %d. Code 0 is normal.\n", err);
 				}
@@ -109,6 +121,9 @@ int main(int argc, char ** argv){
 		}
 	}
 
+	// Clean up
+	free(lrom);
+	
 	return 0;
 
 }
