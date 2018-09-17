@@ -4,6 +4,8 @@
  */
  
  #include "chip8.h"
+ 
+ #define E6 6
 
 struct chip8_registers
 {
@@ -18,8 +20,31 @@ struct chip8_registers
 		 SP;
 };
 
+//static struct chip8_registers *reg;
 
+static const int ands[8] = { 128, 64, 32, 16, 8, 4, 2, 1 };
+//static uint8_t display[WINDOW_W/2][WINDOW_H],
+//		mem[RAMSIZE];
 
+const uint8_t sprite[] = {
+	0x0, 0xF0,0x90,0x90,0x90,0xF0,  //0
+	0x1, 0x20,0x60,0x20,0x20,0x70,  //1
+	0x2, 0xF0,0x10,0xF0,0x80,0xF0,  //2
+	0x3, 0xF0,0x10,0xF0,0x10,0xF0,  //3
+	0x4, 0x90,0x90,0xF0,0x10,0x10,  //4
+	0x5, 0xF0,0x80,0xF0,0x10,0xF0,  //5
+	0x6, 0xF0,0x80,0xF0,0x90,0xF0,  //6
+	0x7, 0xF0,0x10,0x20,0x40,0x40,  //7
+	0x8, 0xF0,0x90,0xF0,0x90,0xF0,  //8
+	0x9, 0xF0,0x90,0xF0,0x10,0xF0,  //9
+	0xa, 0xF0,0x90,0xF0,0x90,0x90,  //a
+	0xb, 0xE0,0x90,0xE0,0x90,0xE0,  //b
+	0xc, 0xF0,0x80,0x80,0x80,0xF0,  //c
+	0xd, 0xE0,0x90,0x90,0x90,0xE0,  //d
+	0xe, 0xF0,0x80,0xF0,0x80,0xF0,  //e
+	0xf, 0xF0,0x80,0xF0,0x80,0x80   //f
+};
+		
 int cleanup(){
 	endwin();
 	//free(reg);
@@ -115,11 +140,54 @@ uint8_t getKeyPress(int press){
 	return retVal;
 }
 
+int drawToScreen(struct chip8_registers *reg, uint8_t * mem, uint8_t display[WINDOW_W/2][WINDOW_H], int x_coord, int y_coord, int nib4, int wrap, WINDOW * win){
+	// First write into memory
+	// initially used online resources, but due to the fact that they didn't work, much of this solution is mine.
+	// drawing loop
+	int vert = 0;
+	for (int i = 0; i < nib4; i++) {
+		//y_coord = (y_coord + i) % WINDOW_H;
+		for (int j = 0; j < 8; j++) {
+			// allows sprite to wrap around screen
+			if (wrap){
+				vert = (y_coord + i) % (WINDOW_H);
+			} else {
+				vert = (y_coord + i);
+				if (vert >= WINDOW_H){
+					break;
+				}
+			}
+			//
+			if ((display[(x_coord + j) % (WINDOW_W/2)][vert] == 1) &&
+				(((mem[reg->I + i] & ands[j]) >> (8 - j - 1)) == 1)) {
+				reg->V[0xf] = 1;
+			}
+
+			// bitwise operations decode each bit of sprite and XOR with the current pixel on screen
+			display[(x_coord + j) % (WINDOW_W/2)][vert] ^= ((mem[reg->I + i] & ands[j]) >> (8 - j - 1));
+		}
+	}
+	
+	if(wmove(win,0,0) == ERR) return 5;
+	for(int y = 0; y < WINDOW_H; y++){
+		for(int x=0; x < WINDOW_W/2; x++){
+			if(display[x][y]){
+				waddch(win, '[');
+				waddch(win, ']');
+			}else{
+				waddch(win, ' ');
+				waddch(win, ' ');
+			}
+		}
+	}
+	
+	
+	wrefresh(win);
+}
+
 
 int emulate(uint8_t * lrom, int fsize, int wrap){
-	uint8_t mem[RAMSIZE] = {0},
-			key[16] = {0},
-			display[WINDOW_W/2][WINDOW_H] = {0},
+	uint8_t key[16] = {0},
 			nib1,
 			nib2,
 			nib3,
@@ -129,13 +197,12 @@ int emulate(uint8_t * lrom, int fsize, int wrap){
 			pixel,
 			press;
 	
-	int ands[8] = { 128, 64, 32, 16, 8, 4, 2, 1 },
-		i,
+	//int ands[8] = { 128, 64, 32, 16, 8, 4, 2, 1 };
+	int i,
 		x_coord,
 		y_coord,
 		tc,
-		spArrLen = SPRITE_ARR_LEN,
-		vert;
+		spArrLen = SPRITE_ARR_LEN;
 
 	uint16_t instr,
 		 displayB=0x0f00,
@@ -153,8 +220,13 @@ int emulate(uint8_t * lrom, int fsize, int wrap){
 	
 	struct chip8_registers *reg= malloc(sizeof(struct chip8_registers*));
 	if (reg == NULL){
-		return 6;
+		return E6;
 	}
+	memset(reg, 0, sizeof(*reg));
+	
+	uint8_t display[WINDOW_W/2][WINDOW_H] = {0},
+		mem[RAMSIZE] = {0};
+
 	//uint8_t emptyReg[16] = {0};
 	//memcpy(reg->V, emptyReg, sizeof(emptyReg));
 	//*reg = {0}
@@ -163,28 +235,11 @@ int emulate(uint8_t * lrom, int fsize, int wrap){
 	//int test2 = sizeof(*reg);
 	
 	// Instead of calloc (which initializes the alloc to 0), I do this.
-	memset(reg, 0, sizeof(*reg));
 	
 	
 	
-	uint8_t sprite[] = {
-		0x0, 0xF0,0x90,0x90,0x90,0xF0,  //0
-		0x1, 0x20,0x60,0x20,0x20,0x70,  //1
-		0x2, 0xF0,0x10,0xF0,0x80,0xF0,  //2
-		0x3, 0xF0,0x10,0xF0,0x10,0xF0,  //3
-		0x4, 0x90,0x90,0xF0,0x10,0x10,  //4
-		0x5, 0xF0,0x80,0xF0,0x10,0xF0,  //5
-		0x6, 0xF0,0x80,0xF0,0x90,0xF0,  //6
-		0x7, 0xF0,0x10,0x20,0x40,0x40,  //7
-		0x8, 0xF0,0x90,0xF0,0x90,0xF0,  //8
-		0x9, 0xF0,0x90,0xF0,0x10,0xF0,  //9
-		0xa, 0xF0,0x90,0xF0,0x90,0x90,  //a
-		0xb, 0xE0,0x90,0xE0,0x90,0xE0,  //b
-		0xc, 0xF0,0x80,0x80,0x80,0xF0,  //c
-		0xd, 0xE0,0x90,0x90,0x90,0xE0,  //d
-		0xe, 0xF0,0x80,0xF0,0x80,0xF0,  //e
-		0xf, 0xF0,0x80,0xF0,0x80,0x80   //f
-	};
+	
+
 
 	srand(time(NULL));
 
@@ -344,66 +399,8 @@ int emulate(uint8_t * lrom, int fsize, int wrap){
 				reg->V[nib2] = r & byte;
 				break;
 			case 0xd: {
-
-				// First write into memory
-				// FOUND ONLINE
-				
-				// draws a sprite to the screen
-				// uses coordinates stored in VX and VY, with height given by N
-				// 
-				// Converting to signed
-				//int8_t signx = reg->V[nib2];
-				//int8_t signy = reg->V[nib3];
-				x_coord = reg->V[nib2];
-				y_coord = reg->V[nib3];
-
-				// because the sprite is represented by hexadecimal numbers
-				// bitwise operators are necessary to obtain each pixel
-
-				// set carry flag to 0
 				reg->V[0xf] = 0;
-				// drawing loop
-				for (int i = 0; i < nib4; i++) {
-					//y_coord = (y_coord + i) % WINDOW_H;
-					for (int j = 0; j < 8; j++) {
-						// allows sprite to wrap around screen
-						// set carry flag to 1 if a sprite changes from set to unset
-						if (wrap){
-							vert = (y_coord + i) % (WINDOW_H);
-						} else {
-							vert = (y_coord + i);
-							if (vert >= WINDOW_H){
-								break;
-							}
-						}
-						//
-						if ((display[(x_coord + j) % (WINDOW_W/2)][vert] == 1) &&
-							(((mem[reg->I + i] & ands[j]) >> (8 - j - 1)) == 1)) {
-							reg->V[0xf] = 1;
-						}
-
-						// bitwise operations decode each bit of sprite and XOR with the current pixel on screen
-						display[(x_coord + j) % (WINDOW_W/2)][vert] ^= ((mem[reg->I + i] & ands[j]) >> (8 - j - 1));
-					}
-					//x_coord = reg->V[nib2];
-					//y_coord = reg->V[nib3];
-				}
-				
-				if(wmove(win,0,0) == ERR) return 5;
-				for(int y = 0; y < WINDOW_H; y++){
-					for(int x=0; x < WINDOW_W/2; x++){
-						if(display[x][y]){
-							waddch(win, '[');
-							waddch(win, ']');
-						}else{
-							waddch(win, ' ');
-							waddch(win, ' ');
-						}
-					}
-				}
-				
-				
-				wrefresh(win);
+				drawToScreen(reg, mem, display, reg->V[nib2], reg->V[nib3], nib4, wrap, win);			
 				break;
 			}
 			case 0xe:	
@@ -506,40 +503,6 @@ int emulate(uint8_t * lrom, int fsize, int wrap){
 		}
 
 		usleep(2500);
-		
-			
-		// Tried to solve timers with children. Became complicated.
-		//
-		/*
-		int time = reg->DT;
-		
-		int status;
-		if(time > 0){
-			int pid;
-			if (!currently_forking) pid = fork();
-			else pid = 1;
-			if(pid == 0){
-				// Child's only purpose is to manage the timers
-				
-				while(time != 0) {
-					delay(1000/60);
-					time -= 1;
-				}
-				exit(EXIT_SUCCESS);
-			}else if (pid > 0){
-				currently_forking = 1;
-				(void)waitpid(-1, &status, WNOHANG);
-				if (WIFEXITED(status)){
-					currently_forking = 0;
-					reg->DT = 0;
-				}
-
-				// Cannot handle case when a chip8 programmer might want to look at the current value of DT to check if it is at a certian point.
-			}else{
-				
-			}
-
-		}*/
 	}
 	
 	// Clean up
