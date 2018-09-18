@@ -20,11 +20,7 @@ struct chip8_registers
 		 SP;
 };
 
-//static struct chip8_registers *reg;
-
 static const int ands[8] = { 128, 64, 32, 16, 8, 4, 2, 1 };
-//static uint8_t display[WINDOW_W/2][WINDOW_H],
-//		mem[RAMSIZE];
 
 const uint8_t sprite[] = {
 	0x0, 0xF0,0x90,0x90,0x90,0xF0,  //0
@@ -46,8 +42,9 @@ const uint8_t sprite[] = {
 };
 		
 int cleanup(){
+	
 	endwin();
-	//free(reg);
+	
 	return 0;
 }
 
@@ -215,7 +212,7 @@ int emulate(uint8_t * lrom, int fsize, int wrap){
 
 	struct timespec * tp = malloc(sizeof(struct timespec*));
 	if (tp == NULL){
-		return 6;
+		return E6;
 	}
 	
 	struct chip8_registers *reg= malloc(sizeof(struct chip8_registers*));
@@ -226,20 +223,6 @@ int emulate(uint8_t * lrom, int fsize, int wrap){
 	
 	uint8_t display[WINDOW_W/2][WINDOW_H] = {0},
 		mem[RAMSIZE] = {0};
-
-	//uint8_t emptyReg[16] = {0};
-	//memcpy(reg->V, emptyReg, sizeof(emptyReg));
-	//*reg = {0}
-	
-	//int test1 = sizeof(reg);
-	//int test2 = sizeof(*reg);
-	
-	// Instead of calloc (which initializes the alloc to 0), I do this.
-	
-	
-	
-	
-
 
 	srand(time(NULL));
 
@@ -506,6 +489,8 @@ int emulate(uint8_t * lrom, int fsize, int wrap){
 	}
 	
 	// Clean up
+	//cleanup(tp, reg);
+	
 	free(tp);
 	free(reg);
 	
